@@ -1,0 +1,6 @@
+pandas
+pytest
+streamlit
+openpyxl
+pypdf
+openai
