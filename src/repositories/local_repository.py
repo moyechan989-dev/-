@@ -44,6 +44,15 @@ class LocalRepository(DataRepository):
     def create_inspection(self, record: dict[str, object]) -> dict[str, object]:
         raise RuntimeError("지도점검 등록은 Supabase 모드에서 사용할 수 있습니다.")
 
+    def get_report_item_by_inspection_id(self, inspection_id: str) -> pd.DataFrame:
+        return pd.DataFrame(columns=["report_item_id", "inspection_id"])
+
+    def create_report_import(self, record: dict[str, object]) -> dict[str, object]:
+        raise RuntimeError("출장보고서 처리이력 저장은 Supabase 모드에서 사용할 수 있습니다.")
+
+    def create_report_item(self, record: dict[str, object]) -> dict[str, object]:
+        raise RuntimeError("출장보고서 처리이력 저장은 Supabase 모드에서 사용할 수 있습니다.")
+
     def get_counts(self) -> dict[str, int]:
         data = self.load_all()
         return {name: len(data[name]) for name in ("companies", "aliases", "inspections", "dispositions")}

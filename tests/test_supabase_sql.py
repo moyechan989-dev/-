@@ -48,3 +48,19 @@ def test_migration_baseline_and_follow_up_are_separated_and_safe():
     assert "unique using index company_aliases_natural_key" in follow_up_sql
     assert "create index if not exists companies_name_normalized_idx" in follow_up_sql
     assert all(word not in follow_up_sql.lower() for word in ("drop ", "delete from", "truncate "))
+
+
+def test_report_item_inspection_link_migration_is_minimal_and_safe():
+    migration = ROOT / "supabase" / "migrations" / "20260827020000_add_report_items_inspection_link.sql"
+    sql = migration.read_text(encoding="utf-8")
+
+    assert migration.exists()
+    assert "add column if not exists inspection_id text" in sql
+    assert "constraint report_items_inspection_fk" in sql
+    assert "references public.inspections (inspection_id)" in sql
+    assert "on delete set null" in sql
+    assert "create unique index if not exists report_items_inspection_id_unique" in sql
+    assert "where inspection_id is not null" in sql
+    assert "report_items_order_unique" not in sql
+    assert "file_hash" not in sql
+    assert all(word not in sql.lower() for word in ("drop ", "delete from", "truncate "))

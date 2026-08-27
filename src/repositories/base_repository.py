@@ -47,6 +47,21 @@ class DataRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_report_item_by_inspection_id(self, inspection_id: str) -> pd.DataFrame:
+        """inspection_id에 연결된 출장보고서 처리 항목을 반환합니다."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def create_report_import(self, record: dict[str, object]) -> dict[str, object]:
+        """출장보고서 처리 이력 한 건을 등록합니다."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def create_report_item(self, record: dict[str, object]) -> dict[str, object]:
+        """출장보고서 처리 항목 한 건을 등록합니다."""
+        raise NotImplementedError
+
+    @abstractmethod
     def get_counts(self) -> dict[str, int]:
         """조회 화면에 필요한 전체 건수를 반환합니다."""
         raise NotImplementedError

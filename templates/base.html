@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}폐기물처리업체 통합 이력관리{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문 바로가기</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="service-brand" href="{{ url_for('companies') }}" aria-label="업체 조회 홈">
+        <span class="service-brand__eyebrow">환경행정 업무지원</span>
+        <strong>폐기물처리업체 통합 이력관리</strong>
+      </a>
+      <nav class="main-nav" aria-label="주요 메뉴">
+        <a class="is-active" href="{{ url_for('companies') }}" aria-current="page">업체 조회</a>
+        <span aria-disabled="true">지도점검 등록 <small>준비중</small></span>
+        <span aria-disabled="true">출장보고서 AI <small>준비중</small></span>
+        <span aria-disabled="true">데이터 현황 <small>준비중</small></span>
+      </nav>
+    </div>
+  </header>
+  <main id="main-content" class="page-shell">
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{{ url_for('static', path='/js/companies.js') }}" defer></script>
+</body>
+</html>

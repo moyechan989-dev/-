@@ -24,6 +24,7 @@ class SupabaseRepository(DataRepository):
         "company_aliases": ["company_id", "alias_value", "normalized_value"],
         "inspections": ["inspection_id", "company_id", "inspection_date"],
         "dispositions": ["disposition_id", "company_id", "disposition_date"],
+        "report_items": ["report_item_id", "inspection_id"],
     }
 
     def __init__(self, url: str, secret_key: str, opener: Callable = urlopen):
@@ -104,8 +105,20 @@ class SupabaseRepository(DataRepository):
         })
 
     def create_inspection(self, record: dict[str, object]) -> dict[str, object]:
+        return self._create_row("inspections", record, "지도점검 저장 중 오류가 발생했습니다.")
+
+    def get_report_item_by_inspection_id(self, inspection_id: str) -> pd.DataFrame:
+        return self._fetch_rows("report_items", {"inspection_id": f"eq.{inspection_id}", "limit": 1})
+
+    def create_report_import(self, record: dict[str, object]) -> dict[str, object]:
+        return self._create_row("report_imports", record, "출장보고서 처리이력 저장 중 오류가 발생했습니다.")
+
+    def create_report_item(self, record: dict[str, object]) -> dict[str, object]:
+        return self._create_row("report_items", record, "출장보고서 처리이력 저장 중 오류가 발생했습니다.")
+
+    def _create_row(self, table: str, record: dict[str, object], error_message: str) -> dict[str, object]:
         request = Request(
-            f"{self.url}/rest/v1/inspections",
+            f"{self.url}/rest/v1/{table}",
             data=json.dumps(record, ensure_ascii=False).encode("utf-8"),
             method="POST",
             headers={
@@ -118,14 +131,14 @@ class SupabaseRepository(DataRepository):
         try:
             with self.opener(request) as response:
                 if response.status not in (200, 201):
-                    raise SupabaseConnectionError("지도점검 저장 중 오류가 발생했습니다.")
+                    raise SupabaseConnectionError(error_message)
                 saved = json.loads(response.read().decode("utf-8"))
         except SupabaseConnectionError:
             raise
         except Exception as error:
-            raise SupabaseConnectionError("지도점검 저장 중 오류가 발생했습니다.") from error
+            raise SupabaseConnectionError(error_message) from error
         if not isinstance(saved, list) or len(saved) != 1 or not isinstance(saved[0], dict):
-            raise SupabaseConnectionError("지도점검 저장 중 오류가 발생했습니다.")
+            raise SupabaseConnectionError(error_message)
         return saved[0]
 
     def get_counts(self) -> dict[str, int]:

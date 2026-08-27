@@ -57,6 +57,7 @@ def save_final_inspection(
         raise ValueError("이 PDF의 지도점검 초안은 이미 저장되었습니다.")
 
     record = build_final_inspection_record(review, company, current_ai_result, current_ai_result_version)
+    record["data_source"] = "pdf_ai_reviewed"
     saved = create_inspection(record)
 
     updated = deepcopy(review)

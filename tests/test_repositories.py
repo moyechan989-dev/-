@@ -142,3 +142,25 @@ def test_supabase_inspection_save_error_does_not_expose_key():
     with pytest.raises(SupabaseConnectionError, match="지도점검 저장 중 오류") as error:
         SupabaseRepository("https://example.supabase.co", "test-secret", opener=opener).create_inspection({})
     assert "test-secret" not in str(error.value)
+
+
+def test_supabase_report_audit_methods_use_only_expected_tables_and_secret_header():
+    requests = []
+
+    def opener(request):
+        requests.append(request)
+        if request.get_method() == "GET":
+            return FakeResponse([])
+        table = urlparse(request.full_url).path.rsplit("/", 1)[1]
+        return FakeResponse([{f"{table[:-1]}_id": "ID-1"}], status=201)
+
+    repository = SupabaseRepository("https://example.supabase.co", "test-secret", opener=opener)
+    assert repository.get_report_item_by_inspection_id("INS-1").empty
+    repository.create_report_import({"original_filename": "A.pdf"})
+    repository.create_report_item({"report_id": "REPORT-1", "inspection_id": "INS-1"})
+
+    assert [urlparse(request.full_url).path.rsplit("/", 1)[1] for request in requests] == [
+        "report_items", "report_imports", "report_items",
+    ]
+    assert all("authorization" not in {name.lower() for name, _ in request.header_items()} for request in requests)
+    assert all(b"test-secret" not in (request.data or b"") for request in requests)

@@ -9,6 +9,7 @@ def test_processes_one_pdf_in_memory():
     assert len(results) == 1
     assert results[0].status == "텍스트 추출 완료"
     assert "normal text" in results[0].text
+    assert len(results[0].file_hash) == 64
 
 
 def test_preserves_upload_order_for_multiple_pdfs():

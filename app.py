@@ -28,26 +28,61 @@ from src.inspection_review_draft import (
 )
 from src.ai_report_extractor import AiReportError, AiReportResult, extract_report_with_ai, is_openai_api_key_configured
 from src.pdf_batch_processor import process_pdf_files, processing_counts
+from src.report_audit import ReportAuditError, get_report_audit_state, record_report_audit
 from src.repositories import create_repository
 from src.search_service import FILTER_COLUMNS, option_values, search_companies
 from src.ui_helpers import display_frame, display_value
+
+
+HWASEONG_BI_URL = "https://www.hscity.go.kr/resources/www/img/sub/Mars1_logo1.png"
 
 
 st.set_page_config(page_title="폐기물처리업체 통합 이력관리", layout="wide")
 
 st.markdown("""
 <style>
-    .stApp { font-size: 16px; }
+    :root {
+        --hs-blue: #004696;
+        --hs-blue-deep: #003470;
+        --hs-blue-pale: #EFF7FF;
+        --hs-orange: #F58220;
+        --hs-line: #D9E7F6;
+        --hs-ink: #172B4D;
+    }
+    .stApp { font-size: 16px; color: var(--hs-ink); background: #F8FBFF; }
     section.main > div.block-container { padding-top: 0.35rem; padding-bottom: 1.5rem; }
-    h1 { font-size: 1.15rem !important; margin-bottom: 0.1rem !important; }
-    h2 { font-size: 1.65rem !important; margin: 0 !important; }
-    h3 { font-size: 1.25rem !important; margin-top: 0.75rem !important; }
+    h1 { font-size: 1.15rem !important; margin-bottom: 0.1rem !important; color: var(--hs-blue-deep) !important; }
+    h2 { font-size: 1.65rem !important; margin: 0 !important; color: var(--hs-blue-deep) !important; letter-spacing: -0.04em; }
+    h3 { font-size: 1.25rem !important; margin-top: 0.75rem !important; color: var(--hs-blue-deep) !important; }
     p, label, .stCaption { font-size: 1rem; }
-    [data-testid="stMetric"] { border-left: 4px solid #1F4E78; padding-left: 0.75rem; }
+    [data-testid="stMetric"] {
+        background: #FFFFFF;
+        border: 1px solid var(--hs-line);
+        border-left: 4px solid var(--hs-blue);
+        border-radius: 12px;
+        padding: 0.7rem 0.85rem;
+        box-shadow: 0 3px 12px rgba(0, 70, 150, 0.06);
+    }
     [data-testid="stMetricValue"] { font-size: 1.7rem; }
-    [data-testid="stDataFrame"] { font-size: 0.94rem; }
-    [data-testid="stSidebar"] { border-right: 1px solid #D9E2F3; }
-    .step-guide { color: #1F4E78; font-weight: 600; font-size: 1rem; margin: 0.1rem 0 0.45rem; }
+    [data-testid="stDataFrame"] { font-size: 0.94rem; border: 1px solid var(--hs-line); border-radius: 10px; overflow: hidden; }
+    [data-testid="stSidebar"] { border-right: 1px solid var(--hs-line); background: linear-gradient(180deg, #F5FAFF 0%, #FFFFFF 35%); }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #52657F; }
+    [data-testid="stSidebar"] [data-testid="stRadio"] label { border-radius: 8px; padding: 0.15rem 0.25rem; }
+    [data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) { background: #E8F3FF; color: var(--hs-blue-deep); font-weight: 700; }
+    [data-testid="stButton"] > button, [data-testid="stDownloadButton"] > button {
+        border-radius: 9px; border-color: var(--hs-blue); color: var(--hs-blue); font-weight: 650;
+    }
+    [data-testid="stButton"] > button[kind="primary"] { background: var(--hs-blue); color: #FFFFFF; }
+    [data-testid="stExpander"] { border: 1px solid var(--hs-line); border-radius: 10px; background: #FFFFFF; }
+    [data-testid="stForm"] { border: 1px solid var(--hs-line); border-radius: 14px; background: #FFFFFF; }
+    .page-kicker { color: var(--hs-orange); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; margin: 0.1rem 0 0.05rem; }
+    .step-guide { color: var(--hs-blue); font-weight: 700; font-size: 0.92rem; margin: 0.1rem 0 0.45rem; }
+    .sidebar-brand { padding: 0.3rem 0.2rem 1rem; border-bottom: 2px solid var(--hs-blue); margin-bottom: 0.9rem; }
+    .sidebar-brand img { display: block; width: 176px; max-width: 100%; height: auto; margin-bottom: 0.55rem; }
+    .sidebar-brand__service { color: var(--hs-orange); font-size: 0.76rem; font-weight: 800; letter-spacing: 0.06em; }
+    .sidebar-brand__name { color: var(--hs-blue-deep); font-size: 1.07rem; font-weight: 800; margin-top: 0.1rem; }
+    .sidebar-section-title { color: var(--hs-blue-deep); font-size: 1rem; font-weight: 800; margin: 0.25rem 0 0.35rem; }
+    .data-source-note { background: #FFFFFF; border: 1px solid var(--hs-line); border-radius: 9px; color: #52657F; font-size: 0.8rem; line-height: 1.45; padding: 0.55rem 0.65rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -57,6 +92,7 @@ def show_page_header(
     description: str = "",
     steps: str | None = None,
 ) -> None:
+    st.markdown('<div class="page-kicker">환경행정 업무지원</div>', unsafe_allow_html=True)
     st.header(title)
     if description:
         st.caption(description)
@@ -481,7 +517,7 @@ def show_trip_report_upload(data, repository) -> None:
                     media_values,
                 )
             if review_state:
-                show_inspection_review_form(review_state, item.filename, item.text, index)
+                review_state = show_inspection_review_form(review_state, item.filename, item.text, index)
                 if review_state["status"] == "completed":
                     show_company_linking(review_state, item.filename, item.text, data, index)
                     latest_review = get_review_state(st.session_state, item.filename, item.text)
@@ -493,6 +529,7 @@ def show_trip_report_upload(data, repository) -> None:
                             data,
                             repository,
                             index,
+                            item.file_hash,
                             saved_result,
                             ai_result_version,
                         )
@@ -530,12 +567,12 @@ def show_ai_report_result(result: AiReportResult, index: int) -> None:
         st.write("-")
 
 
-def show_inspection_review_form(review_state, filename: str, text: str, index: int) -> None:
+def show_inspection_review_form(review_state, filename: str, text: str, index: int):
     values = review_state["values"]
     if review_state["status"] == "completed":
         st.success("담당자 검토 완료 · 지도점검 등록 초안이 메모리에 저장되었습니다.")
         _show_inspection_draft_preview(review_state["inspection_draft"])
-        return
+        return review_state
 
     inspection_types, result_statuses, media_values = load_inspection_form_options()
     st.markdown("###### 담당자 검토 및 지도점검 초안")
@@ -611,7 +648,7 @@ def show_inspection_review_form(review_state, filename: str, text: str, index: i
         "next_check_points": next_check_points,
     }
     if saved:
-        save_review_values(st.session_state, filename, text, revised_values)
+        review_state = save_review_values(st.session_state, filename, text, revised_values)
         st.success("검토 수정값을 임시 초안에 반영했습니다.")
     if completed:
         if not reviewed:
@@ -621,8 +658,9 @@ def show_inspection_review_form(review_state, filename: str, text: str, index: i
             if missing:
                 st.warning(f"다음 필수항목을 확인해주세요: {', '.join(missing)}")
             else:
-                complete_review(st.session_state, filename, text, revised_values)
+                review_state = complete_review(st.session_state, filename, text, revised_values)
                 st.success("지도점검 등록 초안 검토가 완료되었습니다. 다음 단계에서 업체를 연결한 후 최종 저장할 수 있습니다.")
+    return review_state
 
 
 def _choice_index(options: list[str], value: str) -> int:
@@ -701,6 +739,7 @@ def show_final_inspection_save(
     data,
     repository,
     index: int,
+    file_hash: str,
     current_ai_result: AiReportResult,
     current_ai_result_version: int | None,
 ) -> None:
@@ -722,9 +761,11 @@ def show_final_inspection_save(
     saved_state = get_final_save_state(review_state)
     if saved_state and saved_state.get("status") == "saved":
         st.success("이 PDF의 지도점검 이력이 저장되었습니다.")
+        st.caption("출장보고서 AI 검토를 통해 등록된 이력입니다.")
         st.write(f"지도점검 ID: {display_value(saved_state.get('inspection_id'))}")
         st.write(f"업체명: {display_value(saved_state.get('company_name'))}")
         st.write(f"점검일: {display_value(saved_state.get('inspection_date'))}")
+        _show_report_audit_status(filename, text, file_hash, current_ai_result, repository, index)
         _show_recent_saved_inspections(repository, str(company["company_id"]), index)
         return
 
@@ -799,10 +840,41 @@ def show_final_inspection_save(
             load_cached_data.clear()
             load_inspection_form_options.clear()
             st.success("지도점검 이력이 저장되었습니다.")
+            st.caption("출장보고서 AI 검토를 통해 등록된 이력입니다.")
             st.write(f"지도점검 ID: {display_value(saved.get('inspection_id'))}")
             st.write(f"업체명: {display_value(saved.get('company_name'))}")
             st.write(f"점검일: {display_value(saved.get('inspection_date'))}")
+            try:
+                record_report_audit(
+                    st.session_state, filename, text, file_hash, current_ai_result, repository,
+                )
+            except ReportAuditError:
+                st.warning("지도점검 이력은 저장되었지만 출장보고서 처리이력 기록에 실패했습니다.")
+            _show_report_audit_status(filename, text, file_hash, current_ai_result, repository, index)
             _show_recent_saved_inspections(repository, str(company["company_id"]), index)
+
+
+def _show_report_audit_status(
+    filename: str,
+    text: str,
+    file_hash: str,
+    result: AiReportResult,
+    repository,
+    index: int,
+) -> None:
+    review = get_review_state(st.session_state, filename, text)
+    audit = get_report_audit_state(review) if review else None
+    if not audit or audit.get("status") == "saved":
+        return
+    if audit.get("status") == "failed":
+        st.warning("지도점검 이력은 저장되었지만 출장보고서 처리이력 기록에 실패했습니다.")
+        if st.button("처리이력 기록 다시 시도", key=f"pdf_report_audit_retry_{index}"):
+            try:
+                record_report_audit(st.session_state, filename, text, file_hash, result, repository)
+            except ReportAuditError:
+                st.warning("출장보고서 처리이력 기록에 다시 실패했습니다. 지도점검 이력은 유지됩니다.")
+            else:
+                st.success("출장보고서 처리이력을 기록했습니다.")
 
 
 def _show_recent_saved_inspections(repository, company_id: str, index: int) -> None:
@@ -900,10 +972,18 @@ def main() -> None:
         if DATA_BACKEND == "supabase":
             st.info("로컬 CSV를 사용하려면 DATA_BACKEND=local로 변경한 뒤 다시 실행하세요.")
         st.stop()
-    st.sidebar.markdown("### 업무 메뉴")
-    st.sidebar.caption("폐기물처리업체 통합 이력관리")
-    st.sidebar.caption(
-        f"데이터 원본 · {'Supabase' if DATA_BACKEND == 'supabase' else '로컬 CSV'}"
+    st.sidebar.markdown(
+        f'''<div class="sidebar-brand">
+            <img src="{HWASEONG_BI_URL}" alt="화성특례시 BI">
+            <div class="sidebar-brand__service">ENVIRONMENT ADMINISTRATION</div>
+            <div class="sidebar-brand__name">폐기물 통합 이력관리</div>
+        </div>''',
+        unsafe_allow_html=True,
+    )
+    st.sidebar.markdown('<div class="sidebar-section-title">업무 메뉴</div>', unsafe_allow_html=True)
+    st.sidebar.markdown(
+        f'<div class="data-source-note">데이터 원본 · {"Supabase" if DATA_BACKEND == "supabase" else "로컬 CSV"}</div>',
+        unsafe_allow_html=True,
     )
     menu = st.sidebar.radio("메뉴", ["업체 조회", "지도점검 등록", "출장보고서 등록", "데이터 현황"])
     if menu == "업체 조회":

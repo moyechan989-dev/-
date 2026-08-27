@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="page-heading" aria-labelledby="page-title">
+    <p class="section-kicker">환경행정 · 사업장 관리</p>
+    <h1 id="page-title">업체 조회</h1>
+    <p>폐기물처리업체의 기본정보와 지도점검·행정처분 이력을 조회합니다.</p>
+  </section>
+
+  <form class="search-panel" action="{{ url_for('companies') }}" method="get">
+    <section aria-labelledby="search-title">
+      <div class="section-title-row">
+        <h2 id="search-title"><span>01</span> 업체 검색</h2>
+      </div>
+      <div class="search-bar">
+        <label class="sr-only" for="query">통합검색</label>
+        <input id="query" name="query" type="search" value="{{ query }}" placeholder="업체명, 인허가번호, 주소를 입력하세요">
+        <button type="submit">검색</button>
+      </div>
+    </section>
+
+    <section class="filter-section" aria-labelledby="filter-title">
+      <div class="section-title-row">
+        <h2 id="filter-title"><span>02</span> 상세 필터</h2>
+        <a class="reset-link" href="{{ url_for('companies') }}">초기화</a>
+      </div>
+      <div class="filter-grid">
+        {% for item in filter_options %}
+          <label class="filter-field" for="{{ item.field }}">
+            <span>{{ item.label }}</span>
+            <select id="{{ item.field }}" name="{{ item.field }}">
+              {% for choice in item.choices %}
+                <option value="{{ choice.value }}" {% if filters[item.field] == choice.value %}selected{% endif %}>{{ choice.label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        {% endfor %}
+      </div>
+    </section>
+  </form>
+
+  <section class="result-summary" aria-label="업무 데이터 현황">
+    <div class="result-heading">
+      <p class="section-kicker">검색 결과</p>
+      <h2>검색 결과 · <strong>{{ result_count | format_number }}</strong>개 업체</h2>
+    </div>
+    <dl class="kpi-list">
+      <div><dt>등록 업체</dt><dd>{{ counts.companies | format_number }}</dd></div>
+      <div><dt>지도점검</dt><dd>{{ counts.inspections | format_number }}</dd></div>
+      <div><dt>행정처분</dt><dd>{{ counts.dispositions | format_number }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="table-section" aria-labelledby="table-title">
+    <div class="table-section__heading">
+      <h2 id="table-title">업체 목록</h2>
+      <span>총 {{ result_count | format_number }}건</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <caption class="sr-only">검색된 폐기물처리업체 목록</caption>
+        <thead>
+          <tr>
+            <th scope="col">업체명</th>
+            <th scope="col">인허가번호</th>
+            <th scope="col">주소</th>
+            <th scope="col">지역</th>
+            <th scope="col">업종</th>
+            <th scope="col">업체구분</th>
+            <th scope="col">2026 점검대상</th>
+            <th scope="col">예정 점검유형</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for company in companies %}
+            <tr>
+              <td><a class="company-link" href="{{ url_for('companies') }}?company_id={{ company.company_id }}" data-company-id="{{ company.company_id }}">{{ company.company_name }}</a></td>
+              <td>{{ company.permit_number }}</td>
+              <td class="address-cell">{{ company.address }}</td>
+              <td>{{ company.district }}</td>
+              <td>{{ company.industry }}</td>
+              <td>{{ company.entity_type }}</td>
+              <td>{% if company.is_2026_target == 'Y' %}<span class="target-badge">대상</span>{% else %}-{% endif %}</td>
+              <td>{{ company.planned_inspection_type }}</td>
+            </tr>
+          {% else %}
+            <tr><td class="empty-result" colspan="8">조건에 맞는 업체가 없습니다. 검색어 또는 상세 필터를 확인하세요.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="table-note">업체명을 선택하면 향후 업체 상세 화면으로 연결될 수 있도록 식별값을 유지합니다.</p>
+  </section>
+{% endblock %}

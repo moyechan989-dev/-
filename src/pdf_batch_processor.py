@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -10,6 +11,7 @@ from src.pdf_text_extractor import PdfTextResult, PdfValidationError, extract_pd
 class PdfProcessingResult:
     filename: str
     status: str
+    file_hash: str
     result: PdfTextResult | None = None
     error_message: str = ""
 
@@ -33,18 +35,23 @@ def process_pdf_files(files: Iterable[tuple[str, bytes]]) -> list[PdfProcessingR
         try:
             result = extract_pdf_text(filename, content)
         except PdfValidationError as error:
-            processed.append(PdfProcessingResult(filename=filename, status="파일 오류", error_message=str(error)))
+            processed.append(PdfProcessingResult(
+                filename=filename, status="파일 오류", file_hash=hashlib.sha256(content).hexdigest(), error_message=str(error),
+            ))
         except Exception:
             processed.append(
                 PdfProcessingResult(
                     filename=filename,
                     status="파일 오류",
+                    file_hash=hashlib.sha256(content).hexdigest(),
                     error_message="파일 처리 중 오류가 발생했습니다.",
                 )
             )
         else:
             status = "텍스트 추출 완료" if result.text else "텍스트 없음"
-            processed.append(PdfProcessingResult(filename=filename, status=status, result=result))
+            processed.append(PdfProcessingResult(
+                filename=filename, status=status, file_hash=hashlib.sha256(content).hexdigest(), result=result,
+            ))
     return processed
 
 
