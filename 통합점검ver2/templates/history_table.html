@@ -1,0 +1,5 @@
+{% set rows = rows if rows is defined else inspections %}
+<div class="history-list">
+{% for row in rows %}<article class="history-row">{% for item in row.columns %}{% if item.key in ['inspection_date','inspection_type','inspection_result_status','key_findings','disposition_date','violation_content','violation_category','administrative_disposition','accusation','penalty','legal_basis','disposition_status'] %}<div><dt>{{ item.label }}</dt><dd>{{ item.value }}</dd></div>{% endif %}{% endfor %}</article>
+{% else %}<p class="empty-result">등록된 이력이 없습니다.</p>{% endfor %}
+</div>

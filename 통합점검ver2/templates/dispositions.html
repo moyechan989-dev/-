@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}행정처분 이력{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <p class="section-kicker">행정처분 · 조회 전용</p>
+  <h1>행정처분 이력</h1>
+  <p>기존 데이터의 행정처분 이력을 조회합니다. 이 화면에서는 등록하지 않습니다.</p>
+</section>
+
+<form class="search-panel compact" method="get">
+  {% if view == 'all' %}<input type="hidden" name="view" value="all">{% endif %}
+  <div class="section-title-row"><h2><span>01</span> 이력 검색</h2></div>
+  <div class="search-bar">
+    <label class="sr-only" for="query">행정처분 검색</label>
+    <input id="query" name="query" type="search" value="{{ query }}" placeholder="업체명, 위반내용, 처분유형, 관련 법령을 입력하세요">
+    <button type="submit">검색</button>
+  </div>
+</form>
+
+<section class="table-section disposition-section" aria-labelledby="disposition-title">
+  <div class="table-section__heading">
+    <div><h2 id="disposition-title">{{ '검색 결과' if query else ('전체 행정처분 내역' if show_all else '최근 행정처분 내역') }}</h2><p class="table-section__subheading">{{ '검색 결과는 전체 행정처분 데이터에서 최신 처분일 순으로 표시합니다.' if query else ('전체 처분 내역을 최신 처분일 순으로 표시합니다.' if show_all else '최근 처분일 기준 20건') }}</p></div>
+    <span>전체 <strong>{{ total_count | format_number }}건</strong>{% if query %} · 검색 <strong>{{ result_count | format_number }}건</strong>{% endif %}</span>
+  </div>
+  <div class="table-toolbar">{% if show_all and not query %}<a class="button button--secondary" href="{{ url_for('dispositions') }}">최근 내역 보기</a>{% elif not query %}<a class="button button--secondary" href="{{ url_for('dispositions') }}?view=all">전체 내역 보기</a>{% endif %}</div>
+  <div class="table-scroll disposition-table-scroll">
+    <table class="disposition-table">
+      <caption class="sr-only">행정처분 이력 목록</caption>
+      <thead>
+        <tr><th scope="col">처분일</th><th scope="col">업체명</th><th scope="col">위반내용</th><th scope="col">위반유형</th><th scope="col">행정처분</th><th scope="col">과태료</th><th scope="col">관련 법령</th></tr>
+      </thead>
+      <tbody>
+        {% for row in dispositions %}
+        <tr>
+          <td class="date-cell">{{ row["values"]["disposition_date"] }}</td>
+          <td class="company-cell">{{ row["values"]["company_name"] }}</td>
+          <td class="cell-long">{{ row["values"]["violation_content"] }}</td>
+          <td>{{ row["values"]["violation_category"] }}</td>
+          <td>{{ row["values"]["administrative_disposition"] }}</td>
+          <td class="amount-cell">{{ row["values"]["penalty"] }}</td>
+          <td class="cell-long">{{ row["values"]["legal_basis"] }}</td>
+        </tr>
+        {% else %}
+        <tr><td class="empty-result" colspan="7">조건에 맞는 행정처분 이력이 없습니다.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

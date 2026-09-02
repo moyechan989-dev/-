@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}지도점검 지식지원{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <p class="section-kicker">지도점검 · 읽기전용 참고자료</p>
+  <h1>지도점검 지식지원</h1>
+  <p>과거 지도점검 사례와 관련 법령·현장 확인사항을 함께 확인하여 일관된 지도점검 업무를 지원합니다.</p>
+</section>
+
+<p class="notice notice--info">본 화면은 관련 가능성이 있는 확인사항과 참고자료를 제공하며, 위반 여부 및 행정처분은 담당자가 최종 판단합니다.</p>
+
+<form class="search-panel guide-search" method="get">
+  <div class="section-title-row"><h2><span>01</span> 점검 항목 검색</h2></div>
+  <div class="guide-search__fields">
+    <label for="query">위반사항·법령·키워드<input id="query" name="query" value="{{ query }}" placeholder="예: 폐기물이 너무 많이 쌓여 있음, CCTV 화면 안 나옴, 허가증에 없는 시설"></label>
+    <label for="category">분류<select id="category" name="category"><option value="">전체</option>{% for value in categories %}<option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+    <label for="verification_status">검토상태<select id="verification_status" name="verification_status"><option value="">전체</option>{% for value in verification_statuses %}<option value="{{ value }}" {% if verification_status == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+    <button class="button" type="submit">검색</button>
+  </div>
+</form>
+<section class='guide-checklist-bar'><span>이번 점검 체크리스트 {{ selected_manual_ids|length }}개</span><a class='button button--secondary' href='{{ url_for('inspection_checklist') }}'>체크리스트 보기</a></section>
+
+{% if not selected_item %}
+<section class="guide-overview" aria-labelledby="guide-list-title">
+  <div class="section-title-row"><h2 id="guide-list-title"><span>02</span> 자주 확인하는 점검 항목</h2><span class="guide-count">{{ items|length }}개</span></div>
+  <div class="guide-card-grid">
+    {% for item in items %}
+    <a class="guide-card" href="{{ url_for('inspection_guide') }}?manual_id={{ item.manual_id }}">
+      <span class="guide-card__id">{{ item.manual_id }}</span><strong>{{ item.title }}</strong><small>{{ item.category }} · {{ item.keywords[:3] | join(' · ') }}</small>{% if item.trigger_conditions %}<small class='guide-card__trigger'>이런 경우 확인: {{ item.trigger_conditions[:2] | join(' · ') }}</small>{% endif %}
+    </a>
+    <form class='guide-card-actions' method='post' action='{{ url_for('inspection_checklist_item', manual_id=item.manual_id) }}'><input type='hidden' name='return_to' value='{{ url_for('inspection_guide') }}'>{% if item.manual_id in selected_manual_ids %}<input type='hidden' name='action' value='remove'><span class='checklist-selected-label'>이번 점검에 담김</span><button class='button button--secondary' type='submit'>목록에서 빼기</button>{% else %}<button class='button' type='submit'>이번 점검에 담기</button>{% endif %}</form>
+    {% else %}<p class="empty-result">조건에 맞는 점검 항목이 없습니다.</p>{% endfor %}
+  </div>
+</section>
+
+<section class="table-section guide-popular"><div class="table-section__heading"><h2>현재 처분자료 기준 자주 등장하는 위반유형</h2><span>읽기전용 집계</span></div><div class="simple-list">{% for item in popular_categories %}<p><span>{{ item.label }}</span><strong>{{ item.count }}건</strong></p>{% else %}<p class="empty-result">표시할 위반유형이 없습니다.</p>{% endfor %}</div></section>
+{% else %}
+<div class="action-row"><a class="button button--secondary" href="{{ url_for('inspection_guide') }}">점검 항목 목록으로</a></div><form class='guide-detail-checklist-action' method='post' action='{{ url_for('inspection_checklist_item', manual_id=selected_item.manual_id) }}'><input type='hidden' name='return_to' value='{{ url_for('inspection_guide') }}?manual_id={{ selected_item.manual_id }}'>{% if selected_item.manual_id in selected_manual_ids %}<input type='hidden' name='action' value='remove'><span class='checklist-selected-label'>이번 점검에 담김</span><button class='button button--secondary' type='submit'>목록에서 빼기</button>{% else %}<button class='button' type='submit'>이번 점검에 담기</button>{% endif %}</form>
+<section class="guide-detail-heading"><span class="guide-card__id">{{ selected_item.manual_id }}</span><h2>{{ selected_item.title }}</h2><p>{{ selected_item.category }} · 검토상태: <span class="status-badge {% if selected_item.verification_status == '공식법령 확인' %}status-badge--official{% elif selected_item.verification_status == '내부업무 검토완료' %}status-badge--reviewed{% elif selected_item.verification_status == '개정확인 필요' %}status-badge--revision{% else %}status-badge--unverified{% endif %}">{{ selected_item.verification_status }}</span></p><div class="guide-review-meta"><span>법령 기준일: {{ selected_item.effective_date or '미등록' }}</span><span>최종 검토일: {{ selected_item.reviewed_at or '미등록' }}</span></div></section>
+
+{% if selected_item.verification_status == '미검증' %}
+<p class="notice notice--warning">이 항목은 아직 법령 검토가 완료되지 않았습니다.</p>
+{% endif %}
+
+<section class='form-panel guide-situations'><h2>이런 상황에서 확인</h2><ul class='guide-list'>{% for value in selected_item.trigger_conditions %}<li>{{ value }}</li>{% endfor %}</ul></section>
+<section class="guide-detail-grid">
+  <section class="form-panel"><h2><span>A</span> 현장 확인사항</h2><ul class="guide-list">{% for value in selected_item.field_checks %}<li>{{ value }}</li>{% endfor %}</ul><p class="helper-text">적용 대상: {{ selected_item.applies_to | join(', ') }}</p></section>
+  <section class='form-panel guide-questions'><h2>현장에서 물어볼 사항</h2><ul class='guide-list'>{% for value in selected_item.inspector_questions %}<li>{{ value }}</li>{% endfor %}</ul></section>
+  <section class="form-panel guide-legal-panel"><h2><span>B</span> 관련 법령</h2><div class="table-scroll"><table class="legal-reference-table"><caption class="sr-only">관련 법령 검토정보</caption><thead><tr><th scope="col">법령명</th><th scope="col">조문</th><th scope="col">역할</th><th scope="col">확인요약</th><th scope="col">시행/기준일</th><th scope="col">검토상태</th></tr></thead><tbody>{% for ref in selected_item.legal_refs %}<tr><td>{{ ref.law_name }}{% if ref.source_url %}<br><a class="official-law-link" href="{{ ref.source_url }}" target="_blank" rel="noopener noreferrer">공식 법령 보기</a>{% endif %}</td><td>{{ ref.article }}{% if ref.paragraph %}<br>{{ ref.paragraph }}{% endif %}</td><td>{{ ref.role or '-' }}</td><td>{{ ref.summary or '-' }}</td><td>{{ ref.effective_date or '-' }}</td><td><span class="status-badge {% if ref.verification_status == '공식법령 확인' %}status-badge--official{% elif ref.verification_status == '내부업무 검토완료' %}status-badge--reviewed{% elif ref.verification_status == '개정확인 필요' %}status-badge--revision{% else %}status-badge--unverified{% endif %}">{{ ref.verification_status }}</span></td></tr>{% else %}<tr><td colspan="6" class="empty-result">등록된 관련 법령 정보가 없습니다.</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="form-panel"><h2><span>C</span> 확보·확인할 자료</h2><ul class="guide-list">{% for value in selected_item.evidence_items %}<li>{{ value }}</li>{% endfor %}</ul></section>
+  <section class='form-panel guide-mistakes'><h2>놓치기 쉬운 점</h2><ul class='guide-list'>{% for value in selected_item.common_mistakes %}<li>{{ value }}</li>{% endfor %}</ul></section>
+  <section class="form-panel"><h2><span>E</span> 후속 검토사항</h2><ul class="guide-list">{% for value in selected_item.follow_up_checks %}<li>{{ value }}</li>{% endfor %}</ul><p class="helper-text">{{ selected_item.caution }}</p></section>
+</section>
+
+<section class="table-section guide-cases"><div class="table-section__heading"><div><h2>D. 과거 유사사례</h2><p class="table-section__subheading">지식항목 키워드가 위반내용·위반유형·관련 법령에 포함된 기존 처분 사례입니다.</p></div><span>{{ similar_cases|length }}건</span></div><div class="table-scroll"><table class="guide-case-table"><caption class="sr-only">과거 유사사례</caption><thead><tr><th scope="col">처분일</th><th scope="col">위반내용</th><th scope="col">관련 법령</th><th scope="col">행정처분 내용</th><th scope="col">고발 여부</th><th scope="col">과태료</th></tr></thead><tbody>{% for item in similar_cases %}<tr><td>{{ item.disposition_date }}</td><td>{{ item.violation_content }}</td><td>{{ item.legal_basis }}</td><td>{{ item.administrative_disposition }}</td><td>{{ item.accusation }}</td><td>{{ item.penalty }}</td></tr>{% else %}<tr><td class="empty-result" colspan="6">현재 키워드와 일치하는 과거 사례가 없습니다.</td></tr>{% endfor %}</tbody></table></div></section>
+
+<section class="notice notice--info guide-final-note"><strong>안내</strong><br>본 자료는 지도점검 참고자료입니다. 개별 현장의 사실관계와 최신 법령을 확인하여 위반 여부 및 행정처분은 담당자가 최종 판단합니다.</section>
+{% endif %}
+{% endblock %}

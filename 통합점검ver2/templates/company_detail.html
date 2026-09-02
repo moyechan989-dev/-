@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ company.company_name }} · 업체 상세{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="section-kicker">업체 조회 · 상세 정보</p><h1>{{ company.company_name }}</h1><p>기본정보와 지도점검·행정처분 이력을 확인합니다. <span class="page-meta">업체 ID {{ company.company_id }}</span></p></section>
+<div class="action-row"><a class="button button--secondary" href="{{ url_for('companies') }}">업체 목록으로</a><a class="button" href="{{ url_for('export_company_history', company_id=company.company_id) }}">통합이력 Excel 다운로드</a></div>
+<section class="detail-card"><div class="section-title-row"><h2><span>01</span> 업체 기본정보</h2></div><dl class="detail-grid detail-grid--information">
+{% for key, label in [('company_name','업체명'),('permit_number','인허가번호'),('address','주소'),('district','지역'),('industry','업종'),('entity_type','업체구분'),('is_2026_target','2026 점검대상'),('planned_inspection_type','예정 점검유형')] %}<div><dt>{{ label }}</dt><dd>{{ '대상' if key == 'is_2026_target' and company[key] == 'Y' else ('비대상' if key == 'is_2026_target' and company[key] == 'N' else company[key]) }}</dd></div>{% endfor %}
+</dl></section>
+<section class="kpi-cards">{% for label, value in summary.items() %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</section>
+<section class="table-section"><div class="table-section__heading"><h2>지도점검 이력</h2><span>{{ inspections|length }}건</span></div>{% include "history_table.html" with context %}</section>
+<section class="table-section"><div class="table-section__heading"><h2>행정처분 이력</h2><span>{{ dispositions|length }}건</span></div>{% set rows = dispositions %}{% include "history_table.html" %}</section>
+{% endblock %}

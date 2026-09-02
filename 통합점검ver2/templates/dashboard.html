@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}데이터 현황{% endblock %}
+{% block content %}
+<section class="page-heading"><p class="section-kicker">데이터 현황 · 로컬 CSV 기준</p><h1>데이터 현황</h1><p>현재 등록된 업체와 이력 데이터의 현황을 확인합니다.</p></section>
+<section class="kpi-cards"><div><dt>등록 업체</dt><dd>{{ counts.companies | format_number }}</dd></div><div><dt>지도점검</dt><dd>{{ counts.inspections | format_number }}</dd></div><div><dt>행정처분</dt><dd>{{ counts.dispositions | format_number }}</dd></div><div><dt>업체 별칭</dt><dd>{{ counts.aliases | format_number }}</dd></div><div><dt>2026 점검대상</dt><dd>{{ target_count | format_number }}</dd></div></section>
+<div class="action-row"><a class="button" href="{{ url_for('export_all') }}">전체 데이터 Excel 다운로드</a></div>
+<div class="two-columns">{% for title, rows in [('지역별 업체 수', district_counts), ('업종별 업체 수', industry_counts)] %}<section class="table-section"><div class="table-section__heading"><h2>{{ title }}</h2></div><div class="simple-list">{% for row in rows %}<p>{% for item in row.columns %}<span>{{ item.value }}</span>{% endfor %}</p>{% endfor %}</div></section>{% endfor %}</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}출장보고서 AI{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+  <p class="section-kicker">출장보고서 · PDF 텍스트 추출</p>
+  <h1>출장보고서 AI</h1>
+  <p>PDF 텍스트를 추출해 확인하고, 분석·검토·업체 연결·최종 확인의 업무 흐름을 관리합니다.</p>
+</section>
+
+<ol class="workflow-steps" aria-label="출장보고서 처리 단계">
+  <li class="is-current"><span>01</span> PDF 업로드</li>
+  <li><span>02</span> AI 구조화 및 담당자 검토</li>
+  <li><span>03</span> 업체 연결</li>
+  <li><span>04</span> 최종 확인</li>
+</ol>
+
+<p class="notice notice--info">원본 PDF와 추출 텍스트는 서버에 저장하지 않습니다. 텍스트 선택 PDF만 지원하며 OCR은 지원하지 않습니다.</p>
+
+<section class="form-panel">
+  <h2><span>01</span> PDF 업로드 및 텍스트 추출</h2>
+  <form class="file-upload-form" method="post" enctype="multipart/form-data">
+    <label for="report-files">출장결과보고서 PDF 선택</label>
+    <div class="file-input-row"><input id="report-files" type="file" name="files" accept="application/pdf,.pdf" multiple><button class="button" type="submit">텍스트 추출</button></div>
+  </form>
+</section>
+
+{% if processed %}
+<section class="form-panel">
+  <h2><span>01</span> 추출 결과</h2>
+  <div class="kpi-cards kpi-cards--compact">{% for label, value in processing_counts.items() %}<div><dt>{{ label }}</dt><dd>{{ value }}건</dd></div>{% endfor %}</div>
+  {% for item in processed %}
+  <article class="report-item">
+    <div class="report-item__heading"><h3>{{ item.filename }}</h3><span>{{ item.status }}</span></div>
+    <p>페이지 {{ item.page_count }} · 파일 크기 {{ item.size_kb }} KB</p>
+    {% if item.status == '텍스트 추출 완료' %}<textarea readonly aria-label="{{ item.filename }} 추출 텍스트 미리보기">{{ item.preview_text }}</textarea>{% elif item.status == '텍스트 없음' %}<p class="notice notice--info">텍스트를 읽을 수 없는 PDF입니다. 스캔 문서일 수 있습니다.</p>{% else %}<p class="notice notice--error">{{ item.error_message }}</p>{% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="form-panel">
+  <h2><span>02</span> AI 구조화 및 담당자 검토</h2>
+  <p>추출된 출장결과보고서의 내용을 AI가 업무 항목별로 구조화합니다.</p>
+  {% if ai_available %}<p>AI 분석은 담당자가 실행할 때만 시작됩니다. 현재 화면은 로컬 텍스트 추출과 검토 흐름 확인용입니다.</p>{% else %}<p class="notice notice--info">현재 OpenAI API가 설정되지 않아 AI 분석을 사용할 수 없습니다.</p>{% endif %}
+  <button class="button" disabled>AI 분석</button>
+  <div class="review-empty-state"><strong>담당자 검토</strong><p>AI 분석이 완료되면 이 영역에서 추출 내용을 원문과 대조하여 검토합니다.</p></div>
+  <p class="step-note">AI 분석 결과는 참고자료이며 담당자가 원문과 대조하여 최종 확인합니다.</p>
+</section>
+
+<section class="form-panel">
+  <h2><span>03</span> 업체 연결</h2>
+  <p class="helper-text">AI가 업체를 자동 확정하지 않습니다.<br>담당자가 검색 결과를 확인한 뒤 company_id 기준으로 연결합니다.</p>
+  <form class="inline-form" method="get"><label for="company-query">업체 직접 검색<input id="company-query" name="company_query" value="{{ company_query }}" placeholder="업체명, 인허가번호, 주소 또는 업체별칭"></label><button type="submit">검색</button></form>
+  {% if candidates %}<div class="choice-list">{% for item in candidates %}<div><strong>{{ item.company_name }}</strong> <small>{{ item.company_id }} · {{ item.address }} · {{ item.industry }}</small></div>{% endfor %}</div><label class="confirmation-check"><input type="checkbox" disabled> 이 업체가 맞음을 확인했습니다.</label>{% endif %}
+</section>
+
+<section class="form-panel final-confirmation">
+  <h2><span>04</span> 최종 확인</h2>
+  <p class="notice notice--info">현재 로컬 개발모드입니다.<br>검토 화면까지 확인할 수 있으며,<br>실제 저장은 Supabase 환경에서 수행합니다.</p>
+  <button class="button" disabled>최종 저장</button>
+</section>
+{% endblock %}
