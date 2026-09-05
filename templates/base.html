@@ -15,16 +15,18 @@
         <strong>폐기물처리업체 통합 이력관리</strong>
       </a>
       <nav class="main-nav" aria-label="주요 메뉴">
-        <a class="is-active" href="{{ url_for('companies') }}" aria-current="page">업체 조회</a>
-        <span aria-disabled="true">지도점검 등록 <small>준비중</small></span>
-        <span aria-disabled="true">출장보고서 AI <small>준비중</small></span>
-        <span aria-disabled="true">데이터 현황 <small>준비중</small></span>
+        <a class="{% if request.url.path.startswith('/companies') %}is-active{% endif %}" href="{{ url_for('companies') }}">업체 조회</a>
+        <a class="{% if request.url.path.startswith('/inspections') %}is-active{% endif %}" href="{{ url_for('inspection_new') }}">지도점검 등록</a>
+        <a class="{% if request.url.path.startswith('/dispositions') %}is-active{% endif %}" href="{{ url_for('dispositions') }}">행정처분 이력</a>
+        <a class="{% if request.url.path.startswith('/reports') %}is-active{% endif %}" href="{{ url_for('reports') }}">출장보고서 AI</a>
+        <a class="{% if request.url.path.startswith('/dashboard') %}is-active{% endif %}" href="{{ url_for('dashboard') }}">데이터 현황</a>
       </nav>
     </div>
   </header>
   <main id="main-content" class="page-shell">
     {% block content %}{% endblock %}
   </main>
+  <footer class="site-footer">현재 데이터 원본: {{ 'Supabase' if data_backend == 'supabase' else '로컬 CSV' }}</footer>
   <script src="{{ url_for('static', path='/js/companies.js') }}" defer></script>
 </body>
 </html>
