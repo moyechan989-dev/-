@@ -125,10 +125,11 @@ def test_report_upload_uses_existing_pdf_processor_without_ai_call():
     response = client.post("/reports", files=[("files", ("검증.txt", b"test", "text/plain"))])
     assert response.status_code == 200
     assert "파일 오류" in response.text
-    assert "OpenAI API" in response.text
+    assert 'id="analyze-button"' in response.text
 
 
-def test_presentation_keeps_korean_labels_navigation_and_local_mode_notices():
+def test_presentation_keeps_korean_labels_navigation_and_local_mode_notices(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     client, _ = make_client()
     companies = client.get("/companies")
     for menu in ["업체 조회", "지도점검 등록", "행정처분 이력", "출장보고서 AI", "데이터 현황"]:
@@ -140,10 +141,10 @@ def test_presentation_keeps_korean_labels_navigation_and_local_mode_notices():
     assert "2026-08-26" in dispositions.text
 
     reports = client.get("/reports")
-    for step in ["01</span> PDF 업로드", "02</span> AI 구조화 및 담당자 검토", "03</span> 업체 연결", "04</span> 최종 확인"]:
+    for step in ["01</span> PDF 업로드 및 텍스트 추출", "02</span> AI 분석", "03</span> 분석 결과 확인"]:
         assert step in reports.text
-    assert "현재 OpenAI API가 설정되지 않아 AI 분석을 사용할 수 없습니다" in reports.text
-    assert "현재 로컬 개발모드입니다" in reports.text
+    assert "AI 연결 설정이 필요합니다." in reports.text
+    assert "현재 로컬 개발모드입니다" not in reports.text
 
     inspection = client.get("/inspections/new")
     assert "로컬 모드에서는 DB 저장이 지원되지 않습니다" in inspection.text

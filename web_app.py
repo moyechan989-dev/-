@@ -7,15 +7,17 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 from uuid import uuid4
+from time import monotonic
 
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.concurrency import run_in_threadpool
 from fastapi.templating import Jinja2Templates
 
-from src.ai_report_extractor import is_openai_api_key_configured
+from src.ai_report_extractor import AiReportApiError, extract_report_with_ai, is_openai_api_key_configured
 from src.company_service import build_summary, get_company_history
 from src.config import DATA_BACKEND
 from src.excel_export import all_data_filename, build_all_data_excel, build_company_history_excel, build_search_results_excel, company_history_filename
@@ -46,6 +48,7 @@ def create_web_app(repository_factory: Callable[[], DataRepository] = create_rep
     app = FastAPI(title="폐기물처리업체 통합 이력관리", docs_url=None, redoc_url=None)
     app.add_middleware(SessionMiddleware, secret_key=os.getenv('INSPECTION_CHECKLIST_SESSION_SECRET', 'local-inspection-checklist-session-key'))
     app.state.inspection_checklists = {}
+    app.state.report_sessions = {}
     app.mount("/static", StaticFiles(directory=ROOT_DIR / "static"), name="static")
 
     def render(request: Request, name: str, **context: Any) -> HTMLResponse:
@@ -197,9 +200,32 @@ def create_web_app(repository_factory: Callable[[], DataRepository] = create_rep
         for upload in files:
             uploaded_files.append((upload.filename or "", await upload.read()))
         processed = process_pdf_files(uploaded_files)
+        state = _report_state(request)
+        state.update(processed=processed, analyses=[], error="")
         repository = repository_factory()
         candidates = search_companies(repository.list_companies(), repository.list_aliases(), company_query).head(10) if company_query.strip() else pd.DataFrame()
         return _render_reports(request, company_query, candidates, processed)
+
+    @app.post("/reports/analyze", response_class=HTMLResponse, name="report_analyze")
+    async def report_analyze(request: Request) -> HTMLResponse:
+        state = _report_state(request)
+        state["error"] = ""
+        ready = [item for item in state["processed"] if item.status == "텍스트 추출 완료" and item.text.strip()]
+        if not is_openai_api_key_configured():
+            state["error"] = "AI 연결 설정이 필요합니다."
+        elif not ready:
+            state["error"] = "PDF를 업로드하고 텍스트를 먼저 추출해 주세요."
+        else:
+            state["analyses"] = []
+            for item in ready:
+                try:
+                    result = await run_in_threadpool(extract_report_with_ai, item.text)
+                    state["analyses"].append({"filename": item.filename, "result": result, "error": ""})
+                except AiReportApiError as error:
+                    state["analyses"].append({"filename": item.filename, "result": None, "error": str(error)})
+                except Exception:
+                    state["analyses"].append({"filename": item.filename, "result": None, "error": "AI 분석을 완료하지 못했습니다. 다시 시도해 주세요."})
+        return _render_reports(request, "", pd.DataFrame())
 
     @app.get("/dashboard", response_class=HTMLResponse, name="dashboard")
     async def dashboard(request: Request) -> HTMLResponse:
@@ -266,9 +292,29 @@ def _checklist_progress(items: list[dict[str, Any]], checklist_state: dict[str, 
 def _safe_local_redirect(value: str) -> str:
     return value if value.startswith('/') and not value.startswith('//') else '/inspection-guide'
 
+def _report_state(request: Request) -> dict[str, Any]:
+    # 원문은 쿠키나 DB에 넣지 않고, 세션별 메모리에 한 시간 동안만 유지한다.
+    states = request.app.state.report_sessions
+    now = monotonic()
+    for key in list(states):
+        if now - states[key]["updated_at"] > 3600:
+            states.pop(key)
+    key = request.session.get("report_key")
+    if not isinstance(key, str) or key not in states:
+        if len(states) >= 100:
+            states.pop(min(states, key=lambda value: states[value]["updated_at"]))
+        key = uuid4().hex
+        request.session["report_key"] = key
+        states[key] = {"processed": [], "analyses": [], "error": ""}
+    states[key]["updated_at"] = now
+    return states[key]
+
+
 def _render_reports(request: Request, company_query: str, candidates: pd.DataFrame, processed: list[Any] | None = None) -> HTMLResponse:
+    state = _report_state(request)
+    processed = state["processed"] if processed is None else processed
     rows = [{"filename": item.filename, "status": item.status, "page_count": item.result.page_count if item.result else "-", "size_kb": f"{item.result.size_bytes / 1024:.0f}" if item.result else "-", "preview_text": item.preview_text, "has_more_text": item.has_more_text, "error_message": item.error_message} for item in (processed or [])]
-    return TEMPLATES.TemplateResponse(request=request, name="reports.html", context={"data_backend": DATA_BACKEND, "ai_available": is_openai_api_key_configured(), "company_query": company_query, "candidates": _company_rows(candidates), "processed": rows, "processing_counts": processing_counts(processed or [])})
+    return TEMPLATES.TemplateResponse(request=request, name="reports.html", context={"data_backend": DATA_BACKEND, "ai_available": is_openai_api_key_configured(), "text_ready": any(item.status == "텍스트 추출 완료" and item.text.strip() for item in processed), "analyses": state["analyses"], "error": state["error"], "company_query": company_query, "candidates": _company_rows(candidates), "processed": rows, "processing_counts": processing_counts(processed or [])})
 
 
 def inspections_all(repository: DataRepository, column: str) -> list[str]:
