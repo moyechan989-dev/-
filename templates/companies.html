@@ -57,7 +57,7 @@
       <span>총 {{ result_count | format_number }}건</span>
     </div>
     <div class="table-scroll">
-      <table>
+      <table class="company-table">
         <caption class="sr-only">검색된 폐기물처리업체 목록</caption>
         <thead>
           <tr>
@@ -89,7 +89,7 @@
         </tbody>
       </table>
     </div>
-    <p class="table-note">업체명을 선택하면 company_id 기준의 업체 상세와 이력을 확인할 수 있습니다.</p>
+    <p class="table-note">업체명을 선택하면 기본정보와 점검·처분 이력을 확인할 수 있습니다.</p>
     <a class="button button--secondary" href="{{ url_for('export_companies') }}?query={{ query | urlencode }}{% for field, value in filters.items() %}&{{ field }}={{ value | urlencode }}{% endfor %}">현재 검색결과 Excel 다운로드</a>
   </section>
 {% endblock %}

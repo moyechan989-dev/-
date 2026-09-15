@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}이번 점검 체크리스트{% endblock %}
 {% block content %}
-<section class='page-heading'><p class='section-kicker'>지도점검 · 로컬 세션 체크리스트</p><h1>이번 점검 체크리스트</h1><p>체크와 메모는 현재 브라우저 세션의 업무 진행상태이며, 위반 여부나 처분을 판단하지 않습니다.</p></section>
-<div class='action-row'><a class='button button--secondary' href='{{ url_for('inspection_guide') }}'>점검 매뉴얼에서 추가</a><a class='button button--secondary' href='{{ url_for('inspection_new') }}'>지도점검 등록으로</a></div>
+<section class='page-heading'><p class='section-kicker'>지도점검 · 체크리스트</p><h1>이번 점검 체크리스트</h1><p>체크와 메모는 현재 브라우저 세션의 업무 진행상태이며, 위반 여부나 처분을 판단하지 않습니다.</p></section>
+<div class='action-row'><a class='button button--secondary' href='{{ url_for('inspection_guide') }}'>지도점검 지원 보기</a></div>
 <section class='form-panel checklist-progress'><h2>진행 현황</h2><div class='summary-line'><span>선택 매뉴얼 <strong>{{ progress.selected_count }}개</strong></span><span>현장 확인사항 <strong>{{ progress.field_checked }} / {{ progress.field_total }}</strong> 확인</span><span>확보자료 <strong>{{ progress.evidence_checked }} / {{ progress.evidence_total }}</strong> 확인</span></div></section>
 {% if not checklist_items %}
-<section class='form-panel'><p>아직 선택한 점검 매뉴얼이 없습니다.</p><a class='button' href='{{ url_for('inspection_guide') }}'>점검 매뉴얼에서 추가</a></section>
+<section class='form-panel'><p>아직 선택한 점검 매뉴얼이 없습니다.</p><a class='button' href='{{ url_for('inspection_guide') }}'>지도점검 지원 보기</a></section>
 {% else %}
 {% for item in checklist_items %}
 <section class='form-panel checklist-item'>
@@ -28,5 +28,5 @@
 {% endfor %}
 <section class='form-panel'><h2>이번 점검 공통 메모</h2><form method='post' action='{{ url_for('inspection_checklist_common_note') }}'><textarea class='checklist-common-note' name='common_note' placeholder='이번 현장점검의 공통 메모를 기록합니다.'>{{ checklist_state.common_note }}</textarea><button class='button' type='submit'>공통 메모 반영</button></form></section>
 {% endif %}
-<section class='notice notice--info guide-final-note'><strong>안내</strong><br>체크 상태와 메모는 현재 로컬 세션에서만 유지됩니다. 최종 판단은 담당자가 현장 사실관계와 최신 법령을 확인하여 합니다.</section>
+<section class='notice notice--info guide-final-note'><strong>안내</strong><br>최종 판단은 담당자가 현장 사실관계와 최신 법령을 확인하여 합니다.</section>
 {% endblock %}

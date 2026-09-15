@@ -1,0 +1,20 @@
+{% macro status_badge(status) -%}
+<span class="status-badge {% if status == '공식법령 확인' %}status-badge--official{% elif status == '내부업무 검토완료' %}status-badge--reviewed{% elif status == '개정확인 필요' %}status-badge--revision{% else %}status-badge--unverified{% endif %}">{{ status }}</span>
+{%- endmacro %}
+
+{% macro legal_table(refs) -%}
+<div class="table-scroll legal-table-scroll" tabindex="0" role="region" aria-label="관련 법령 표">
+  <table class="legal-reference-table">
+    <caption class="sr-only">관련 법령 검토정보</caption>
+    <colgroup><col class="law-name-col"><col class="law-article-col"><col class="law-role-col"><col class="law-summary-col"><col class="law-date-col"></colgroup>
+    <thead><tr><th scope="col">법령명</th><th scope="col">조문</th><th scope="col">역할</th><th scope="col">확인요약</th><th scope="col">시행/기준일</th></tr></thead>
+    <tbody>{% for ref in refs %}<tr>
+      <td><strong>{{ ref.law_name }}</strong><div>{{ status_badge(ref.verification_status) }}</div>{% if ref.source_url %}<a class="official-law-link" href="{{ ref.source_url }}" target="_blank" rel="noopener noreferrer">공식 법령 보기 ↗</a>{% endif %}</td>
+      <td>{{ ref.article }}{% if ref.paragraph %}<br>{{ ref.paragraph }}{% endif %}</td>
+      <td><span class="role-badge">{{ ref.role or '-' }}</span></td>
+      <td>{{ ref.summary or '-' }}</td>
+      <td class="date-cell">{{ ref.effective_date or '-' }}</td>
+    </tr>{% else %}<tr><td colspan="5" class="empty-result">등록된 관련 법령 정보가 없습니다.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+{%- endmacro %}

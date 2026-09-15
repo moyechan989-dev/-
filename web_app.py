@@ -126,7 +126,13 @@ def create_web_app(repository_factory: Callable[[], DataRepository] = create_rep
         checklist_state = _checklist_state(request)
         selected_item = get_inspection_knowledge_item(items, manual_id)
         dispositions = repository.load_all()["dispositions"]
-        similar_cases = public_case_rows(find_similar_dispositions(dispositions, selected_item)) if selected_item else []
+        if selected_item:
+            case_frame = find_similar_dispositions(dispositions, selected_item)
+        elif query.strip():
+            case_frame = find_similar_dispositions(dispositions, {"keywords": [query]})
+        else:
+            case_frame = _search_dispositions(dispositions, "").head(20)
+        similar_cases = public_case_rows(case_frame)
         categories = sorted({str(item.get("category", "")) for item in items if item.get("category")})
         popular_categories = _popular_disposition_categories(dispositions)
         return render(

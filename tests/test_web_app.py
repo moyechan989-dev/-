@@ -132,7 +132,7 @@ def test_presentation_keeps_korean_labels_navigation_and_local_mode_notices(monk
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     client, _ = make_client()
     companies = client.get("/companies")
-    for menu in ["업체 조회", "지도점검 등록", "행정처분 이력", "출장보고서 AI", "데이터 현황"]:
+    for menu in ["업체 조회", "지도점검 지원", "행정처분 이력", "출장보고서 AI", "데이터 현황"]:
         assert menu in companies.text
 
     dispositions = client.get("/dispositions")
@@ -159,7 +159,7 @@ def test_inspection_guide_lists_knowledge_and_keeps_private_case_fields_hidden()
 
     detail = client.get("/inspection-guide", params={"manual_id": "IG-01"})
     assert detail.status_code == 200
-    assert "guide-case-table" in detail.text
+    assert "case-grid" in detail.text
     assert "legal-reference-table" in detail.text
     assert 'status-badge--official' in detail.text
     assert "company_name" not in detail.text
@@ -287,19 +287,19 @@ def test_inspection_guide_searches_field_expressions_and_renders_field_aids():
     assert '현재 보관 중인 폐기물은 종류별로 얼마나 됩니까?' in detail.text
     assert '위반으로 판단됩니다' not in detail.text
     overview = client.get('/inspection-guide')
-    assert '이런 경우 확인:' in overview.text
+    assert '이런 경우 확인' in overview.text
 
 
 def test_local_inspection_checklist_supports_selection_progress_notes_and_removal():
     client, _ = make_client()
     guide = client.get('/inspection-guide')
     assert guide.status_code == 200
-    assert '이번 점검에 담기' in guide.text
+    assert '이번 점검에 담기' not in guide.text
 
     added = client.post('/inspection-checklist/items/IG-05', data={'return_to': '/inspection-checklist'})
     assert added.status_code == 200
     assert '선택 매뉴얼 <strong>1개</strong>' in added.text
-    assert '이번 점검에 담김' in client.get('/inspection-guide', params={'manual_id': 'IG-05'}).text
+    assert '이번 점검에 담김' not in client.get('/inspection-guide', params={'manual_id': 'IG-05'}).text
     assert 'IG-05' in added.text and '현장 확인사항' in added.text and '확보·확인할 자료' in added.text
 
     duplicate = client.post('/inspection-checklist/items/IG-05', data={'return_to': '/inspection-checklist'})
