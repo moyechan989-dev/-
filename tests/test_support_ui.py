@@ -30,13 +30,15 @@ def test_support_hub_sections_and_honest_empty_states():
     elements = Elements(response.text).elements
     ids = {attrs.get("id") for _, attrs in elements}
     assert {"manuals", "laws", "standards", "cases", "forms"} <= ids
-    assert "등록된 처분기준 자료가 없습니다." in response.text
+    assert "주요 확인항목" in response.text
+    assert 'data-standard-id="DS-01"' in response.text
     assert "현재 등록된 서식이 없습니다." in response.text
     assert "이번 점검에 담기" not in response.text
     assert not any(tag == "a" and "download" in attrs for tag, attrs in elements)
     cards = [attrs for tag, attrs in elements if tag == "article" and attrs.get("class") == "guide-card"]
     assert len(cards) == 12
-    assert not any(tag == "form" and attrs.get("method") == "post" for tag, attrs in elements)
+    assert all(attrs.get('action', '').endswith('/inspection-guide/ai')
+               for tag, attrs in elements if tag == 'form' and attrs.get('method') == 'post')
 
 
 def test_support_cases_use_only_existing_records_and_hide_identifiers():

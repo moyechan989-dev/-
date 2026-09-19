@@ -11,7 +11,8 @@ from time import monotonic
 
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, JSONResponse
+from pydantic import BaseModel, Field
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.concurrency import run_in_threadpool
@@ -19,6 +20,8 @@ from fastapi.templating import Jinja2Templates
 
 from src.ai_report_extractor import AiReportApiError, extract_report_with_ai, is_openai_api_key_configured
 from src.company_service import build_summary, get_company_history
+from src.disposition_standards import load_disposition_standards, load_disposition_general_rules, disposition_search_text
+from src.disposition_ai import AI_UNAVAILABLE, answer_disposition_question
 from src.config import DATA_BACKEND
 from src.excel_export import all_data_filename, build_all_data_excel, build_company_history_excel, build_search_results_excel, company_history_filename
 from src.inspection_service import build_inspection_record, find_duplicate_inspections
@@ -41,6 +44,10 @@ TEMPLATES.env.filters["format_number"] = lambda value: f"{int(value):,}"
 FILTER_LABELS = {"district": "지역", "industry": "업종", "entity_type": "업체구분", "is_2026_target": "2026 점검대상", "planned_inspection_type": "예정 점검유형"}
 DISPLAY_COLUMNS = {"inspection_date": "점검일", "inspection_type": "점검유형", "inspection_result_status": "점검결과", "inspection_media": "점검매체", "key_findings": "주요 점검내용", "suspected_violation": "위반 또는 지적사항", "on_site_action": "현장조치", "follow_up_action": "후속조치", "disposition_date": "처분일", "violation_content": "위반내용", "violation_category": "위반유형", "administrative_disposition": "행정처분", "accusation": "고발", "penalty": "과태료", "legal_basis": "관련 법령", "disposition_status": "처분상태"}
 EXCEL_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+class DispositionQuestion(BaseModel):
+    question: str = Field(min_length=1, max_length=1000)
 
 
 def create_web_app(repository_factory: Callable[[], DataRepository] = create_repository) -> FastAPI:
@@ -135,13 +142,34 @@ def create_web_app(repository_factory: Callable[[], DataRepository] = create_rep
         similar_cases = public_case_rows(case_frame)
         categories = sorted({str(item.get("category", "")) for item in items if item.get("category")})
         popular_categories = _popular_disposition_categories(dispositions)
+        standards = load_disposition_standards()
         return render(
             request, "inspection_guide.html", query=query, category=category,
             verification_status=verification_status, verification_statuses=VERIFICATION_STATUSES,
             categories=categories, items=search_inspection_knowledge(items, query, category, verification_status),
             selected_item=selected_item, similar_cases=similar_cases, popular_categories=popular_categories,
             selected_manual_ids=checklist_state['selected_manual_ids'],
+            disposition_standards=standards,
+            disposition_categories=list(dict.fromkeys(item['category'] for item in standards)),
+            disposition_general_rules=load_disposition_general_rules(),
+            disposition_search_text=disposition_search_text,
+            disposition_ai_available=is_openai_api_key_configured(),
         )
+
+    @app.post('/inspection-guide/ai', name='disposition_ai')
+    async def disposition_ai(request: Request, body: DispositionQuestion) -> JSONResponse:
+        if not is_openai_api_key_configured():
+            return JSONResponse({'error': AI_UNAVAILABLE}, status_code=503)
+        try:
+            def analyze():
+                # 조회만 수행한다. 원본 사례나 질문을 세션·DB·로그에 저장하지 않는다.
+                data = repository_factory().load_all()
+                return answer_disposition_question(body.question, data['dispositions'])
+            result = await run_in_threadpool(analyze)
+            html = TEMPLATES.get_template('disposition_ai_result.html').render(result=result)
+            return JSONResponse({'result_status': result['result_status'], 'html': html})
+        except Exception:
+            return JSONResponse({'error': AI_UNAVAILABLE}, status_code=503)
 
     @app.get('/inspection-checklist', response_class=HTMLResponse, name='inspection_checklist')
     async def inspection_checklist(request: Request) -> HTMLResponse:

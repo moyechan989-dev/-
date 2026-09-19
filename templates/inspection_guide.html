@@ -2,73 +2,101 @@
 {% from "guide_components.html" import legal_table, status_badge %}
 {% block title %}지도점검 지원{% endblock %}
 {% block content %}
-<section class="page-heading">
-  <p class="section-kicker">현장 업무 참고자료</p><h1>지도점검 지원</h1>
-  <p>현장 점검에 필요한 매뉴얼, 법령, 처분기준과 사례를 한 곳에서 확인합니다.</p>
-</section>
-<form class="search-panel guide-search" method="get" action="{{ url_for('inspection_guide') }}">
-  <div class="section-title-row"><h2>매뉴얼·법령·사례 통합 탐색</h2><a class="reset-link" href="{{ url_for('inspection_guide') }}">초기화</a></div>
-  <div class="guide-search__fields">
-    <label for="query">현장 상황 또는 법령<input id="query" name="query" type="search" value="{{ query }}" placeholder="예: 폐기물이 너무 많이 쌓여 있음, CCTV 화면"></label>
-    <label for="category">분류<select id="category" name="category"><option value="">전체</option>{% for value in categories %}<option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
-    <label for="verification_status">검토상태<select id="verification_status" name="verification_status"><option value="">전체</option>{% for value in verification_statuses %}<option value="{{ value }}" {% if verification_status == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
-    <button class="button" type="submit">검색</button>
-  </div>
-</form>
-<nav class="section-nav" aria-label="지도점검 지원 자료">
-  <a href="#manuals">지도점검 매뉴얼</a><a href="#laws">관련 법령</a><a href="#standards">행정처분 기준</a><a href="#cases">유사사례</a><a href="#forms">법정·업무 서식</a>
-</nav>
-<section id="manuals" class="support-section" aria-labelledby="manual-title">
-  <div class="section-title-row"><h2 id="manual-title">지도점검 매뉴얼</h2>{% if not selected_item %}<span class="guide-count">{{ items|length }}개 항목</span>{% else %}<a class="button button--secondary" href="{{ url_for('inspection_guide') }}?query={{ query|urlencode }}&category={{ category|urlencode }}&verification_status={{ verification_status|urlencode }}#manuals">목록으로</a>{% endif %}</div>
-  {% if not selected_item %}
-  <p class="helper-text">자주 확인하는 점검 항목 · 현장 상황에 맞는 매뉴얼을 선택해 주세요.</p>
-  <div class="guide-card-grid">
-    {% for item in items %}
-    <article class="guide-card">
-      <span class="guide-card__id">{{ item.manual_id }}</span><h3>{{ item.title }}</h3>
-      <dl class="guide-card__info"><div><dt class="sr-only">키워드</dt><dd class="card-keywords">{{ item.keywords|join(' · ') }}</dd></div>
-      {% if item.trigger_conditions %}<div><dt class="sr-only">이런 경우 확인</dt><dd class="card-description">{{ item.trigger_conditions[0] }}</dd></div>{% endif %}</dl>
-      <a class="button button--secondary" href="{{ url_for('inspection_guide') }}?manual_id={{ item.manual_id|urlencode }}&query={{ query|urlencode }}&category={{ category|urlencode }}&verification_status={{ verification_status|urlencode }}#manuals" aria-label="{{ item.manual_id }} {{ item.title }} 상세보기">상세보기 <span aria-hidden="true">→</span></a>
-    </article>
-    {% else %}<p class="empty-result">조건에 맞는 점검 항목이 없습니다.</p>{% endfor %}
-  </div>
-  {% else %}
-  <div class="guide-detail-heading"><span class="guide-card__id">{{ selected_item.manual_id }}</span><h3>{{ selected_item.title }}</h3><p>{{ selected_item.category }} · {{ status_badge(selected_item.verification_status) }}</p><div class="guide-review-meta"><span>법령 기준일: {{ selected_item.effective_date or '미등록' }}</span><span>최종 검토일: {{ selected_item.reviewed_at or '미등록' }}</span></div></div>
-  {% if selected_item.verification_status == '미검증' %}<p class="notice notice--warning">이 항목은 아직 법령 검토가 완료되지 않았습니다.</p>{% endif %}
-  <div class="guide-detail-grid">
-    {% for title, values in [('이런 상황에서 확인', selected_item.trigger_conditions), ('현장 확인사항', selected_item.field_checks), ('현장에서 물어볼 사항', selected_item.inspector_questions), ('확보·확인할 자료', selected_item.evidence_items), ('놓치기 쉬운 점', selected_item.common_mistakes), ('후속 검토사항', selected_item.follow_up_checks)] %}
-    <details class="guide-disclosure"{% if loop.index <= 2 %} open{% endif %}><summary>{{ title }} <span class="guide-count">{{ values|length }}개</span></summary><ul class="guide-list">{% for value in values %}<li>{{ value }}</li>{% else %}<li>등록된 자료 없음</li>{% endfor %}</ul></details>
-    {% endfor %}
-  </div>
-  <p class="helper-text">적용 대상: {{ selected_item.applies_to|join(', ') }}</p>
-  {% if selected_item.caution %}<p class="step-note">{{ selected_item.caution }}</p>{% endif %}
-  {% endif %}
-</section>
-<section id="laws" class="support-section guide-legal-panel" aria-labelledby="law-title">
-  <div class="section-title-row"><h2 id="law-title">관련 법령</h2><span class="guide-count">매뉴얼에 연결된 참고자료</span></div>
-  {% if selected_item %}{{ legal_table(selected_item.legal_refs) }}
-  {% else %}
-  <p class="helper-text">점검 항목을 펼치면 법령·조문과 확인요약을 볼 수 있습니다.</p>
-  {% for item in items %}<details class="guide-disclosure"><summary><span class="guide-card__id">{{ item.manual_id }}</span> {{ item.title }} <span class="guide-count">{{ item.legal_refs|length }}개</span></summary>{{ legal_table(item.legal_refs) }}</details>{% else %}<p class="empty-result">조건에 맞는 관련 법령 정보가 없습니다.</p>{% endfor %}
-  {% endif %}
-</section>
-<section id="standards" class="support-section" aria-labelledby="standard-title">
-  <h2 id="standard-title">행정처분 기준</h2>
-  <div class="empty-state"><strong>등록된 처분기준 자료가 없습니다.</strong><p>향후 위반유형별 처분기준을 연결하여 법령·사례와 함께 확인할 수 있도록 구성할 예정입니다.</p><p class="step-note">과거 사례를 처분기준으로 적용하지 않습니다.</p></div>
-</section>
-<section id="cases" class="support-section guide-cases" aria-labelledby="case-title">
-  <div class="section-title-row"><h2 id="case-title">유사사례</h2><span class="guide-count">{{ similar_cases|length }}건 · 최대 20건</span></div>
-  <p class="helper-text">{% if selected_item %}선택한 매뉴얼의 키워드와 일치하는 과거 처분사례{% elif query %}검색어와 일치하는 과거 처분사례{% else %}최근 과거 처분사례 · 매뉴얼을 선택하면 관련 사례를 확인할 수 있습니다.{% endif %}</p>
-  <div class="case-grid">
-  {% for item in similar_cases %}
-    <article class="case-card"><div class="case-card__heading"><span class="guide-card__id">사례 {{ loop.index }}</span></div>
-    <h3 class="case-card__title">{{ item.violation_content }}</h3><dl><div><dt>관련 법령</dt><dd>{{ item.legal_basis }}</dd></div><div><dt>처분·조치</dt><dd>{{ item.administrative_disposition }}</dd></div></dl>
-    <div class="case-card__meta"><span class="date-cell">처분일 {{ item.disposition_date }}</span>{% if item.accusation != '-' %}<span>고발 {{ item.accusation }}</span>{% endif %}{% if item.penalty != '-' %}<span>과태료 {{ item.penalty }}</span>{% endif %}</div>
-    </article>
-  {% else %}<p class="empty-result">현재 키워드와 일치하는 과거 사례가 없습니다.</p>{% endfor %}
-  </div>
-  {% if popular_categories and not selected_item and not query %}<details class="guide-disclosure"><summary>과거 사례에서 자주 등장하는 위반유형</summary><div class="simple-list">{% for item in popular_categories %}<p><span>{{ item.label }}</span><strong>{{ item.count }}건</strong></p>{% endfor %}</div></details>{% endif %}
-  <p class="step-note">개별 현장의 사실관계와 최신 법령을 확인하여 위반 여부 및 행정처분은 담당자가 최종 판단합니다.</p>
-</section>
-<section id="forms" class="support-section" aria-labelledby="form-title"><h2 id="form-title">법정·업무 서식</h2><div class="empty-state"><strong>현재 등록된 서식이 없습니다.</strong><p>향후 필요한 서식을 용도·점검유형별로 찾아볼 수 있도록 연결할 예정입니다.</p></div></section>
+<link rel="stylesheet" href="{{ url_for('static', path='/css/inspection-guide.css') }}?v=recovery-1">
+{% set tabs = [('manuals', '지도점검 매뉴얼'), ('laws', '관련 법령'), ('standards', '행정처분 기준'), ('cases', '유사사례'), ('forms', '법정·업무 서식')] %}
+{% set requested_tab = request.query_params.get('tab', 'manuals') %}
+{% set active_tab = requested_tab if requested_tab in ['manuals', 'laws', 'standards', 'cases', 'forms'] else 'manuals' %}
+{% macro tab_url(tab, manual_id='') -%}
+{{ url_for('inspection_guide') }}?tab={{ tab }}&manual_id={{ manual_id|urlencode }}&query={{ query|urlencode }}&category={{ category|urlencode }}&verification_status={{ verification_status|urlencode }}
+{%- endmacro %}
+<div class="inspection-support">
+  <header class="page-heading">
+    <h1>지도점검 지원</h1>
+    <p>현장 점검에 필요한 매뉴얼, 법령, 처분기준과 사례를 한 곳에서 확인합니다.</p>
+  </header>
+  <form class="support-search" method="get" action="{{ url_for('inspection_guide') }}">
+    <input type="hidden" name="tab" value="{{ active_tab }}">
+    <div class="support-heading"><h2>매뉴얼·법령·사례 통합 탐색</h2><a class="reset-link" href="{{ url_for('inspection_guide') }}">초기화</a></div>
+    <div class="support-search-grid">
+      <label for="query">현장 상황 또는 법령<input id="query" name="query" type="search" value="{{ query }}" placeholder="예: 올바로, 보관시설, 실적보고"></label>
+      <label for="category">분류<select id="category" name="category"><option value="">전체</option>{% for value in categories %}<option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+      <label for="verification_status">검토상태<select id="verification_status" name="verification_status"><option value="">전체</option>{% for value in verification_statuses %}<option value="{{ value }}" {% if verification_status == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+      <button class="support-button support-button--primary" type="submit">검색</button>
+    </div>
+  </form>
+  <nav class="support-tabs" aria-label="지도점검 지원 영역 탭">
+    {% for tab, label in tabs %}<a class="support-tab" href="{{ tab_url(tab, selected_item.manual_id if selected_item else '') }}" aria-controls="{{ tab }}"{% if active_tab == tab %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+  </nav>
+
+  <section id="manuals" class="support-panel support-panel--manuals" aria-labelledby="manual-title"{% if active_tab != 'manuals' %} hidden{% endif %}>
+    {% if not selected_item %}
+    <div class="support-panel-header"><h2 id="manual-title">지도점검 매뉴얼</h2><span class="support-muted">{{ items|length }}개 항목</span></div>
+    <div class="guide-card-grid">
+      {% for item in items %}
+      <article class="guide-card">
+        <span class="support-badge support-badge--accent">{{ item.manual_id }}</span><h3>{{ item.title }}</h3>
+        <div class="support-keywords" aria-label="키워드">{% for keyword in item.keywords %}<span class="support-badge">{{ keyword }}</span>{% endfor %}</div>
+        {% if item.trigger_conditions %}<p class="support-description"><span class="sr-only">이런 경우 확인: </span>{{ item.trigger_conditions[0] }}</p>{% endif %}
+        <a class="support-button" href="{{ tab_url('manuals', item.manual_id) }}" aria-label="{{ item.manual_id }} {{ item.title }} 상세보기">상세보기 <span aria-hidden="true">→</span></a>
+      </article>
+      {% else %}<p class="empty-result">조건에 맞는 점검 항목이 없습니다.</p>{% endfor %}
+    </div>
+    {% else %}
+    <div class="support-card support-detail-header">
+      <div>
+        <span class="support-badge support-badge--accent">{{ selected_item.manual_id }}</span>
+        <h2 id="manual-title">{{ selected_item.title }}</h2>
+        <div class="support-keywords">{% for keyword in selected_item.keywords %}<span class="support-badge">{{ keyword }}</span>{% endfor %}</div>
+        <div class="support-detail-meta"><span>법령 기준일 {{ selected_item.effective_date or '미등록' }}</span><span>최종 검토일 {{ selected_item.reviewed_at or '미등록' }}</span>{{ status_badge(selected_item.verification_status) }}</div>
+      </div>
+      <a class="support-button" href="{{ tab_url('manuals') }}">목록으로</a>
+    </div>
+    {% if selected_item.verification_status == '미검증' %}<p class="support-note">이 항목은 아직 법령 검토가 완료되지 않았습니다.</p>{% endif %}
+    <div class="support-detail-primary">
+      {% for title, values in [('이런 상황에서 확인', selected_item.trigger_conditions), ('현장 확인사항', selected_item.field_checks)] %}
+      {% set values = values|default([]) %}
+      <section class="support-card"><h3>{{ title }}</h3><ul class="support-list">{% for value in values[:6] %}<li>{{ value }}</li>{% else %}<li>등록된 자료 없음</li>{% endfor %}</ul>
+        {% if values|length > 6 %}<details class="support-more"><summary>나머지 {{ values|length - 6 }}개 펼쳐보기</summary><ul class="support-list">{% for value in values[6:] %}<li>{{ value }}</li>{% endfor %}</ul></details>{% endif %}
+      </section>
+      {% endfor %}
+    </div>
+    <div class="support-detail-secondary">
+      {% for title, values in [('현장에서 물어볼 사항', selected_item.inspector_questions), ('놓치기 쉬운 점', selected_item.common_mistakes), ('확보·확인할 자료', selected_item.evidence_items), ('후속 검토사항', selected_item.follow_up_checks)] %}
+      <details class="support-accordion"><summary>{{ title }} <span class="support-muted">· {{ values|length }}개</span></summary><ul class="support-list">{% for value in values %}<li>{{ value }}</li>{% else %}<li>등록된 자료 없음</li>{% endfor %}</ul></details>
+      {% endfor %}
+    </div>
+    <details class="support-note"><summary>적용 대상 및 참고사항</summary><p>적용 대상: {{ selected_item.applies_to|join(', ') }}</p>{% if selected_item.caution %}<p>{{ selected_item.caution }}</p>{% endif %}</details>
+    {% endif %}
+  </section>
+
+  <section id="laws" class="support-panel" aria-labelledby="law-title"{% if active_tab != 'laws' %} hidden{% endif %}>
+    <div class="support-heading"><div><h2 id="law-title">관련 법령</h2><p class="support-muted">{{ '선택한 매뉴얼에 연결된 참고자료' if selected_item else '매뉴얼별로 연결된 참고자료' }}</p></div>{% if selected_item %}<span class="support-badge">{{ selected_item.manual_id }} · {{ selected_item.title }}</span>{% endif %}</div>
+    {% if selected_item %}{{ legal_table(selected_item.legal_refs) }}{% else %}
+    <div class="support-law-list">{% for item in items %}<details class="support-accordion"><summary><span class="support-badge support-badge--accent">{{ item.manual_id }}</span> {{ item.title }} <span class="support-muted">· {{ item.legal_refs|length }}개</span></summary>{{ legal_table(item.legal_refs) }}</details>{% else %}<p class="support-muted">조건에 맞는 관련 법령 정보가 없습니다.</p>{% endfor %}</div>
+    {% endif %}
+  </section>
+
+  {% include 'disposition_standards.html' %}
+
+  <section id="cases" class="support-panel support-panel--cases" aria-labelledby="case-title"{% if active_tab != 'cases' %} hidden{% endif %}>
+    <div class="support-panel-header"><div><h2 id="case-title">유사사례</h2><p class="support-muted">{% if selected_item %}{{ selected_item.manual_id }} · 선택한 매뉴얼의 키워드와 일치하는 과거 처분사례{% elif query %}검색어와 일치하는 과거 처분사례{% else %}최근 과거 처분사례 · 매뉴얼 선택 또는 키워드로 관련 사례를 찾을 수 있습니다.{% endif %}</p></div><span class="support-muted">{{ similar_cases|length }}건 · 최대 20건</span></div>
+    <div class="case-grid">
+      {% for item in similar_cases %}
+      <article class="case-card">
+        <span class="support-badge support-badge--accent">사례 {{ loop.index }}</span>
+        {% if item.violation_content|length > 100 %}
+        <details class="support-case-full"><summary><h3 class="support-case-preview">{{ item.violation_content[:100] }}…</h3><span class="support-muted">위반내용 전체보기</span></summary><p>{{ item.violation_content }}</p></details>
+        {% else %}<h3>{{ item.violation_content }}</h3>{% endif %}
+        <dl class="support-case-law"><div><dt>관련 법령</dt><dd>{{ item.legal_basis }}</dd></div></dl>
+        <dl class="support-case-meta"><div><dt>처분·조치</dt><dd>{{ item.administrative_disposition }}</dd></div><div><dt>처분일</dt><dd class="date-cell">{{ item.disposition_date }}</dd></div>{% if item.accusation != '-' %}<div><dt>고발</dt><dd>{{ item.accusation }}</dd></div>{% endif %}{% if item.penalty != '-' %}<div><dt>과태료</dt><dd>{{ item.penalty }}</dd></div>{% endif %}</dl>
+      </article>
+      {% else %}<p class="empty-result">현재 키워드와 일치하는 과거 사례가 없습니다.</p>{% endfor %}
+    </div>
+    <p class="support-note">위반 여부 및 행정처분은 개별 현장의 사실관계와 최신 법령을 확인하여 담당자가 최종 판단합니다.</p>
+  </section>
+
+  <section id="forms" class="support-panel support-empty" aria-labelledby="form-title"{% if active_tab != 'forms' %} hidden{% endif %}>
+    <h2 id="form-title">법정·업무 서식</h2><strong>현재 등록된 서식이 없습니다.</strong><p>향후 필요한 서식을 용도·점검유형별로 찾아볼 수 있도록 연결할 예정입니다.</p>
+  </section>
+</div>
 {% endblock %}

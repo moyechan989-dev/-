@@ -1,0 +1,60 @@
+/* 행정처분 기준 탭에만 적용한다. */
+.inspection-support .ds-panel { padding: 0; border: 0; background: transparent; }
+.ds-panel .ds-heading p { color: var(--muted); }
+.ds-panel .ds-filters { display: grid; grid-template-columns: minmax(0, 1fr) 240px auto; gap: 16px; align-items: end; margin-top: 22px; padding: 22px; background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.ds-panel .ds-filters label { display: grid; gap: 8px; font-size: 14px; color: var(--muted); min-width: 0; }
+.ds-panel .ds-filters input, .ds-panel .ds-filters select { width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; font: inherit; font-size: 16px; color: var(--ink); background: #fff; border: 1px solid #b8c9d9; border-radius: 6px; }
+.ds-panel .ds-filters button { align-self: end; min-height: 46px; }
+.ds-panel .ds-quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.ds-panel .ds-quick button { min-height: 38px; padding: 7px 13px; border: 1px solid #b8c9d9; border-radius: 20px; color: var(--navy); background: #fff; font: inherit; font-size: 14px; cursor: pointer; }
+.ds-panel .ds-quick button[aria-pressed="true"] { color: #fff; background: var(--navy); border-color: var(--navy); }
+.ds-panel .ds-quick button:hover { border-color: var(--navy); }
+.ds-panel :focus-visible { outline: 3px solid #3688cf; outline-offset: 3px; }
+.ds-panel .ds-guidance { padding: 14px 18px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 14px; color: var(--muted); }
+.ds-panel summary { cursor: pointer; color: var(--navy); font-weight: 700; }
+.ds-panel li { margin: 6px 0; line-height: 1.65; }
+.ds-panel ul { padding-left: 22px; }
+.ds-panel .ds-results-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 24px 0 16px; }
+.ds-panel #ds-count { font-size: 14px; color: var(--muted); }
+.ds-panel .ds-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.ds-panel .ds-card { min-width: 0; padding: 26px; border: 1px solid var(--line); border-radius: 10px; background: #fff; overflow-wrap: anywhere; word-break: keep-all; }
+.ds-panel .ds-card-label { display: flex; gap: 8px; font-size: 13px; color: var(--navy); }
+.ds-panel .ds-card-label span { padding: 4px 9px; border-radius: 5px; background: #eef4fa; }
+.inspection-support .ds-panel .ds-card h3 { margin: 14px 0 0; font-size: 23px; }
+.ds-panel .ds-summary { color: var(--muted); font-size: 14px; }
+.ds-panel .ds-condition { font-size: 16px; font-weight: 600; }
+.ds-panel .ds-condition > span { display: block; margin: 17px 0 5px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.ds-panel .ds-basis { margin: 14px 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.ds-panel .ds-basis p { margin: 2px 0; }
+.ds-panel .ds-sanctions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid #cbd9e5; border-radius: 7px; overflow: hidden; }
+.ds-panel .ds-sanctions > div { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; padding: 13px 4px; background: #f4f8fc; text-align: center; }
+.ds-panel .ds-sanctions > div + div { border-left: 1px solid #cbd9e5; }
+.ds-panel .ds-stage { font-size: 13px; color: var(--muted); }
+.ds-panel .ds-badge { padding: 4px 7px; border-radius: 4px; color: #123e6b; background: #e1ecf6; font-size: 15px; white-space: nowrap; }
+.ds-panel .ds-badge--warning { background: #edf0f3; color: #435666; }
+.ds-panel .ds-badge--cancel { background: #f9e9e6; color: #923d32; }
+.ds-panel .ds-duration { color: var(--navy); font-size: 17px; font-weight: 700; }
+.ds-panel .ds-unspecified { color: var(--muted); font-size: 12px; }
+.ds-panel .ds-unconfirmed { padding: 12px; border-radius: 6px; background: #f1f4f6; font-size: 14px; color: var(--muted); }
+.ds-panel .ds-fine { margin-top: 16px; padding: 14px; background: #fff6ed; border: 1px solid #efd5bb; border-radius: 7px; color: #764817; font-size: 13px; }
+.ds-panel .ds-fine-title { display: block; margin-top: 5px; }
+.ds-panel .ds-fine-amounts { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 10px; }
+.ds-panel .ds-fine p { line-height: 1.6; font-size: 12px; }
+.ds-panel .ds-details { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 15px; }
+.ds-panel .ds-details summary > span { margin-left: 8px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.ds-panel .ds-variant { padding: 18px 0; border-bottom: 1px solid var(--line); }
+.ds-panel h4 { margin: 0 0 10px; font-size: 16px; color: var(--navy); }
+.ds-panel .ds-variant ul, .ds-panel .ds-checks ul { font-size: 14px; }
+.ds-panel .ds-source { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.ds-panel .ds-checks { padding-top: 18px; }
+.ds-panel #ds-empty { padding: 25px; border-radius: 8px; background: #fff; }
+@media (max-width: 1024px) {
+  .ds-panel .ds-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 600px) {
+  .ds-panel .ds-filters { grid-template-columns: minmax(0, 1fr); padding: 18px; }
+  .ds-panel .ds-card { padding: 16px; }
+  .inspection-support .ds-panel .ds-card h3 { font-size: 21px; }
+  .ds-panel .ds-badge { font-size: 12px; padding: 4px; }
+  .ds-panel .ds-duration { font-size: 15px; }
+}

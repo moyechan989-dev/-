@@ -1,0 +1,41 @@
+/* 현장 상황 AI 영역 전용. 기존 기준 카드·필터에는 적용하지 않는다. */
+.guide-ai { margin-top: 16px; padding: 18px 22px; border: 1px solid #ccdbe7; border-radius: 10px; background: #fff; min-width: 0; overflow-wrap: anywhere; word-break: keep-all; }
+.inspection-support .guide-ai h3 { margin: 0; font-size: 20px; }
+.guide-ai .guide-ai-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.guide-ai .guide-ai-input-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-top: 12px; }
+.guide-ai input { min-width: 0; width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #b8c9d9; border-radius: 6px; font: inherit; font-size: 16px; }
+.guide-ai button { padding: 9px 18px; min-height: 44px; border: 1px solid var(--navy); border-radius: 6px; background: var(--navy); color: #fff; font: inherit; font-size: 15px; cursor: pointer; }
+.guide-ai button:disabled { opacity: .5; cursor: default; }
+.guide-ai :focus-visible { outline: 3px solid #3688cf; outline-offset: 3px; }
+.guide-ai .guide-ai-quick { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.guide-ai .guide-ai-quick button { min-height: 30px; padding: 4px 10px; border-color: #cbd9e5; color: var(--navy); background: #f5f8fb; font-size: 13px; }
+.guide-ai #guide-ai-error, .guide-ai #guide-ai-progress { font-size: 14px; color: var(--muted); }
+.guide-ai .guide-ai-result-title { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.guide-ai .guide-ai-result-title > span, .guide-ai .guide-ai-category { padding: 4px 9px; border-radius: 4px; background: #edf4fa; color: var(--navy); font-size: 13px; }
+.guide-ai .guide-ai-note { font-size: 13px; color: var(--muted); }
+.guide-ai .guide-ai-match { margin-top: 18px; padding-top: 18px; border-top: 1px solid #dce5ec; }
+.guide-ai .guide-ai-match h4 { margin: 10px 0; }
+.guide-ai .guide-ai-law { color: var(--muted); font-size: 13px; }
+.guide-ai .guide-ai-law p { margin-top: 3px; }
+.guide-ai .guide-ai-section-label { display: block; margin: 14px 0 8px; font-size: 14px; color: var(--navy); }
+.guide-ai .guide-ai-sanctions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid #cbd9e5; border-radius: 6px; overflow: hidden; }
+.guide-ai .guide-ai-sanctions > div { display: grid; gap: 8px; padding: 12px 5px; background: #f1f6fa; color: var(--navy); text-align: center; font-size: 15px; }
+.guide-ai .guide-ai-sanctions > div + div { border-left: 1px solid #cbd9e5; }
+.guide-ai .guide-ai-sanctions span { color: var(--muted); font-size: 13px; }
+.guide-ai .guide-ai-fine { margin-top: 12px; padding: 12px; border: 1px solid #efd5bb; border-radius: 6px; background: #fff6ed; color: #764817; font-size: 13px; }
+.guide-ai .guide-ai-fine > div { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 8px; }
+.guide-ai .guide-ai-fine p { font-size: 12px; }
+.guide-ai .guide-ai-evidence { margin-top: 12px; font-size: 13px; color: var(--muted); }
+.guide-ai .guide-ai-evidence small { display: block; margin-top: 4px; }
+.guide-ai .guide-ai-checks, .guide-ai .guide-ai-cases { margin-top: 18px; }
+.guide-ai .guide-ai-checks ul { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 28px; font-size: 14px; }
+.guide-ai .guide-ai-cases dl { margin: 12px 0 0; padding: 12px; background: #f5f8fb; font-size: 13px; }
+.guide-ai .guide-ai-cases dl > div { display: grid; grid-template-columns: 90px minmax(0,1fr); gap: 8px; margin: 5px 0; }
+.guide-ai .guide-ai-cases dt { color: var(--muted); }
+.guide-ai .guide-ai-cases dd { margin: 0; }
+@media (max-width: 600px) {
+  .guide-ai { padding: 16px; }
+  .guide-ai button { padding: 9px 12px; }
+  .guide-ai .guide-ai-checks ul { grid-template-columns: minmax(0,1fr); }
+  .guide-ai .guide-ai-sanctions > div { font-size: 13px; }
+}

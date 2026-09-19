@@ -1,0 +1,13 @@
+<link rel="stylesheet" href="{{ url_for('static', path='/css/disposition-ai.css') }}">
+<section class="guide-ai" aria-labelledby="guide-ai-title">
+  <h3 id="guide-ai-title">현장 상황 AI 확인</h3>
+  <form id="guide-ai-form" class="guide-ai-form" method="post" action="{{ url_for('disposition_ai') }}">
+    <label for="guide-ai-question" class="guide-ai-label">현장 상황 질문</label>
+    <div class="guide-ai-input-row"><input id="guide-ai-question" name="question" type="text" maxlength="1000" required autocomplete="off" placeholder="예: CCTV 영상이 30일치밖에 없습니다."><button type="submit"{% if not disposition_ai_available %} disabled{% endif %}>AI 확인</button></div>
+  </form>
+  <div class="guide-ai-quick" aria-label="빠른 질문"><span>빠른 질문</span>{% for label, question in [('보관량', '폐기물을 너무 많이 쌓아놨어요.'), ('올바로', '올바로 입력을 안 했어요.'), ('CCTV', 'CCTV 영상이 30일치밖에 없습니다.'), ('변경신고', '시설을 바꿨는데 변경신고를 안 했어요.'), ('장부', '장부가 없어요.'), ('처리시설', '처리시설 검사를 받지 않았어요.')] %}<button type="button" data-question="{{ question }}">{{ label }}</button>{% endfor %}</div>
+  <p id="guide-ai-progress" role="status" hidden>검색된 근거를 확인하고 있습니다.</p>
+  <p id="guide-ai-error" role="alert"{% if disposition_ai_available %} hidden{% endif %}>AI 분석을 사용할 수 없습니다. 아래 행정처분 기준을 확인해 주세요.</p>
+</section>
+<div id="guide-ai-result" aria-live="polite" hidden></div>
+<script src="{{ url_for('static', path='/js/disposition-ai.js') }}" defer></script>

@@ -1,0 +1,50 @@
+{% macro sanctions(variant) %}
+{% if variant.sanctions is not none %}
+<div class="ds-sanctions" aria-label="행정처분 차수별 기준">
+  {% for sanction in variant.sanctions %}<div><span class="ds-stage">{{ loop.index }}차</span>
+  {% if sanction %}<strong class="ds-badge {% if sanction == '허가취소' %}ds-badge--cancel{% elif sanction == '경고' %}ds-badge--warning{% endif %}">{{ sanction.split(' ')[0] }}</strong>{% if ' ' in sanction %}<span class="ds-duration">{{ sanction.split(' ')[1] }}</span>{% endif %}
+  {% else %}<span class="ds-unspecified">원문 미기재</span>{% endif %}</div>{% endfor %}
+</div>
+{% else %}<p class="ds-unconfirmed">{{ variant.administrative_status }} · 관련 과태료를 확인하세요.</p>{% endif %}
+{% endmacro %}
+{% macro fines(variant) %}
+{% for fine in variant.related_fines %}
+<aside class="ds-fine" aria-label="관련 과태료">
+  <strong>관련 과태료</strong><span class="ds-fine-title">{{ fine.title }}</span>
+  <div class="ds-fine-amounts">{% for amount in fine.amounts_manwon %}<span>{{ '3차 이상' if loop.index == 3 else (loop.index|string ~ '차') }} <b>{{ amount|format_number }}만원</b></span>{% endfor %}</div>
+  {% for condition in fine.conditions %}<p>{{ condition }}</p>{% endfor %}
+  <p class="ds-source">{{ fine.source.provision }} · {{ fine.source.page }}쪽 · 개정 {{ fine.source.source_date }}</p>
+</aside>
+{% endfor %}
+{% endmacro %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/disposition-standards.css') }}">
+<section id="standards" class="support-panel ds-panel" aria-labelledby="standard-title"{% if active_tab != 'standards' %} hidden{% endif %}>
+  <header class="ds-heading"><h2 id="standard-title">행정처분 기준</h2><p>현장 상황 또는 위반유형을 검색하여 관련 법령과 1~4차 처분기준을 확인합니다.</p></header>
+  <form class="ds-filters" role="search" aria-label="행정처분 기준 검색">
+    <label>현장 상황 또는 위반유형<input id="ds-query" type="search" placeholder="예: CCTV, 60일, 변경신고, 누출" autocomplete="off"></label>
+    <label>분류<select id="ds-category"><option value="">전체 분류</option>{% for category in disposition_categories %}<option>{{ category }}</option>{% endfor %}</select></label>
+    <button type="reset" class="support-button">초기화</button>
+  </form>
+  <div class="ds-quick" aria-label="빠른 분류 필터">{% for label, value in [('보관', '보관'), ('올바로·전자기록', '올바로·전자기록'), ('CCTV·화재예방', 'CCTV·화재예방'), ('허가·신고', '허가·신고'), ('장부', '장부·보고'), ('처리시설', '처리시설'), ('준수사항', '준수사항·명령')] %}<button type="button" data-category="{{ value }}" aria-pressed="false">{{ label }}</button>{% endfor %}</div>
+  <details class="ds-guidance"><summary>적용기준 안내</summary><p>허가받은 폐기물처리업자 기준입니다. 행정처분은 시행규칙 별표 21, 과태료는 시행령 별표 8로 구분합니다.</p><ul>{% for rule in disposition_general_rules %}<li>{{ rule.text }} <span class="ds-source">{{ rule.source.provision }} · {{ rule.source.page }}쪽</span></li>{% endfor %}</ul><p>‘원문 미기재’는 해당 차수의 처분이 기재되지 않았다는 뜻입니다. 관련 과태료를 표시하지 않은 항목은 과태료가 없다는 의미가 아닙니다.</p></details>
+  {% include 'disposition_ai_form.html' %}
+  <div class="ds-results-heading"><h3>주요 확인항목</h3><span id="ds-count" role="status" aria-live="polite">{{ disposition_standards|length }}개 기준</span></div>
+  <p id="ds-empty" hidden>등록된 기준에서 일치하는 항목을 찾지 못했습니다.</p>
+  <div class="ds-grid">
+  {% for item in disposition_standards %}{% set primary = item.variants[0] %}
+    <article class="ds-card" data-standard-id="{{ item.id }}" data-category="{{ item.category }}" data-search="{{ disposition_search_text(item) }}">
+      <div class="ds-card-label"><span>{{ '%02d'|format(item.priority) }}</span><span>{{ item.category }}</span></div>
+      <h3>{{ item.title }}</h3><p class="ds-summary">{{ item.short_summary }}</p>
+      <p class="ds-condition"><span>대표 조건</span>{{ primary.title }}</p>
+      <div class="ds-basis"><span>근거</span>{% for basis in primary.legal_basis %}<p>{{ basis }}</p>{% endfor %}</div>
+      {{ sanctions(primary) }}
+      {{ fines(primary) }}
+      <details class="ds-details"><summary>세부기준 보기 <span>{{ item.variants|length }}개 조건</span></summary>
+        {% for variant in item.variants %}<section class="ds-variant"><h4>{{ loop.index }}. {{ variant.title }}</h4><ul>{% for condition in variant.conditions %}<li>{{ condition }}</li>{% endfor %}</ul><div class="ds-basis">{% for basis in variant.legal_basis %}<p>{{ basis }}</p>{% endfor %}</div>{{ sanctions(variant) }}{{ fines(variant) }}<p class="ds-source">{{ variant.source.file }} · {{ variant.source.page }}쪽<br>{{ variant.source.provision }} · 개정 {{ variant.source.source_date }}</p></section>{% endfor %}
+        <section class="ds-checks"><h4>현장에서 추가 확인</h4><ul>{% for check in item.field_checks[:5] %}<li>{{ check }}</li>{% endfor %}</ul></section>
+      </details>
+    </article>
+  {% endfor %}
+  </div>
+</section>
+<script src="{{ url_for('static', path='/js/disposition-standards.js') }}" defer></script>
